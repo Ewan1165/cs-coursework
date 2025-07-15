@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        * {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: large;
+        }
+        
+        body {
+            background-color: #f8f4f4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #loginBox {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            width: 28vw;
+            height: 35vh;
+            border-radius: 1rem;
+            border-color: black;
+            border-style: solid;
+            background: white;
+            margin-bottom: 15vh;
+        }
+
+        .textInput {
+            display: flex;
+            width: 12vw;
+            height: 2vh;
+            margin-top: 0.5vh;
+            margin-bottom: 1.5vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="loginBox">
+            <label for="firstName">First Name</label>
+            <input title="firstName" class="textInput" type="text" />
+            <label for="lastName">Surname</label>
+            <input title="lastName" class="textInput" type="text" />
+            <label for="password">Password</label>
+            <input title="password" class="textInput" type="password" />
+            <button>Login</button>
+        </div>
+    </div>
+</body>
+
+<script src="login/main.js"></script>
+
+</html>
