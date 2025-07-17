@@ -5,7 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Landing Page</title>
 </head>
-<body>
-    
-</body>
+
+<body></body>
+
+<script>
+    async function main() {
+        let cookie = parseInt(window.localStorage.getItem("logincookie"))
+
+        if (cookie == null) {
+            window.location.replace("/login")
+        } else {
+            let firstname = window.localStorage.getItem("firstname")
+            let lastname = window.localStorage.getItem("lastname")
+            let res = await fetch("/api/testLogin", {
+                method: "POST",
+                body: JSON.stringify({
+                    FirstName: firstname,
+                    LastName: lastname,
+                    LoginCookie: cookie
+                })
+            })
+            if (res.status == 232) {
+                window.location.replace("/login")
+            } else if (res.status == 230) {
+                window.location.replace("/home")
+            } else if (res.status == 231) {
+                window.location.replace("/admin/home")
+            }
+        }
+    }
+    main()
+</script>
+
 </html>
