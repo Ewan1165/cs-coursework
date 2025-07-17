@@ -1,76 +1,5 @@
 import sqlite3 as sql
-
-tableData = {
-    "TblUsers": """
-        CREATE TABLE TblUsers (
-            UserID integer,
-            FirstName text,
-            LastName text,
-            PhoneNumber text,
-            Password text,
-            LoginCookie integer,
-            Manager integer,
-            PRIMARY KEY (UserID)
-        );
-    """,
-    "TblRequests": """
-        CREATE TABLE TblRequests (
-            RequestID integer,
-            UserID integer,
-            Accepted bool,
-            RequestType integer,
-            StartTime integer,
-            Length integer,
-            PRIMARY KEY (RequestID),
-            FOREIGN KEY (UserID) REFERENCES TblUsers(UserID)
-        );
-    """,
-    "TblSlots": """
-        CREATE TABLE TblSlots (
-            SlotID integer,
-            UserID integer,
-            StartTime integer,
-            Length integer,
-            PRIMARY KEY (SlotID),
-            FOREIGN KEY (UserID) REFERENCES TblUsers(UserID)
-        );
-    """,
-    "TblClockIn": """
-        CREATE TABLE TblClockIn (
-            ClockInId integer,
-            UserID integer,
-            Time integer,
-            InOrOut integer,
-            PRIMARY KEY (ClockInId),
-            FOREIGN KEY (UserID) REFERENCES TblUsers(UserID)
-        );
-    """,
-    "TblMessages": """
-        CREATE TABLE TblMessages (
-            MessageID integer,
-            SenderID integer,
-            ReceiverID integer,
-            Body text,
-            Timestamp integer,
-            PRIMARY KEY (MessageID),
-            FOREIGN KEY (SenderID) REFERENCES TblUsers(UserID),
-            FOREIGN KEY (ReceiverID) REFERENCES TblUsers(UserID)
-        );
-    """,
-    "TblNotification": """
-        CREATE TABLE TblNotification (
-            NotificationID integer,
-            UserID integer,
-            Title text,
-            Body text,
-            MessageID integer,
-            Read bool,
-            PRIMARY KEY (NotificationID),
-            FOREIGN KEY (UserID) REFERENCES TblUsers(UserID),
-            FOREIGN KEY (MessageID) REFERENCES TblMessages(MessageID)
-        );
-    """
-}
+import tableData
 
 #define a class to perform all interactions with the database with all validations
 class Database:
@@ -79,10 +8,10 @@ class Database:
         this.filename = filename
         this.con = sql.connect(filename)
         tables = this.getTables()
-        for table in tableData:
+        for table in tableData.statements:
             if table not in tables:
                 #create the table if it doesnt already exist
-                this.query(tableData[table])
+                this.query(tableData.statements[table])
 
     def getTables(this):
         #return all tables that currently exist in the database
