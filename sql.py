@@ -40,10 +40,22 @@ class Database:
             cookie, manager = this.fetchOne("SELECT LoginCookie, Manager FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))
         except:
             return 0
-        print([cookie, manager])
         if cookie == None or cookie != logincookie:
             return 0
         if manager == 0:
             return 2
         else:
             return 1
+        
+    def userLoginStatusHeader(this, header):
+        return this.userLoginStatus(header["FirstName"], header["LastName"], header["LoginCookie"])
+    
+    def testPassword(this, firstname, lastname, password):
+        dbPassword = this.fetchOne("SELECT Password FROM tblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))[0]
+        return (dbPassword == password)
+    
+    def updateCookie(this, firstname, lastname, newCookie):
+        this.query("UPDATE tblUsers SET LoginCookie = ? WHERE FirstName = ? AND LastName = ?;", (newCookie, firstname, lastname))
+
+    def deleteCookie(this, firstname, lastname):
+        this.query("UPDATE tblUsers SET LoginCookie = NULL WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))

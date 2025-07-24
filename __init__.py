@@ -1,5 +1,6 @@
 from bottle import Bottle, run, static_file, HTTPError, request, response
-import os, json
+import os, json, random
+import sha256
 from sql import Database
 
 app = Bottle()
@@ -40,10 +41,8 @@ def serveLandingPage():
 #Test Login status code 230: logged in and is an employee, 231: logged in and is a manager, 232: not logged in
 @app.route("/api/testLogin", method="POST")
 def testLogin():
-    body = json.loads(request.body.read())
-    loginStatus = db.userLoginStatus(body["FirstName"], body["LastName"], body["LoginCookie"])
-    print([body["FirstName"], body["LastName"], body["LoginCookie"]])
-    print(loginStatus)
+    authHeader = json.loads(request.get_header("authorization"))
+    loginStatus = db.userLoginStatusHeader(authHeader)
     match loginStatus:
         case 0:
             response.status = 232
@@ -52,5 +51,27 @@ def testLogin():
         case 2:
             response.status = 231
     return
+
+#Log user in status code 232: password is incorrect
+@app.route("/api/login", method="POST")
+def apiLogin():
+    authHeader = json.loads(request.get_header("authorization"))
+    hashedPassword = sha256.hash(authHeader["Password"])
+    correctPassword = db.testPassword(authHeader["FirstName"], authHeader["LastName"], hashedPassword)
+    if correctPassword == False:
+        response.status = 232
+        return
+    newCookie = random.randint(100000000000, 999999999999)
+    db.updateCookie(authHeader["FirstName"], authHeader["LastName"], newCookie)
+    response.status = 230
+    response.content_type = 'application/json'
+    return json.dumps({"LoginCookie": newCookie})
+
+@app.route("/api/logout", method="POST")
+def apiLogout():
+    authHeader = json.loads(request.get_header("authorization"))
+    loginStatus = db.userLoginStatusHeader(authHeader)
+    if loginStatus in [1, 2]:
+        db.deleteCookie(authHeader["FirstName"], authHeader["LastName"])
 
 run(app, host="localhost", port=3000)

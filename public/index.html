@@ -19,11 +19,13 @@
             let lastname = window.localStorage.getItem("lastname")
             let res = await fetch("/api/testLogin", {
                 method: "POST",
-                body: JSON.stringify({
-                    FirstName: firstname,
-                    LastName: lastname,
-                    LoginCookie: cookie
-                })
+                headers: {
+                    authorization: JSON.stringify({
+                        FirstName: firstname,
+                        LastName: lastname,
+                        LoginCookie: cookie
+                    })
+                }
             })
             if (res.status == 232) {
                 window.location.replace("/login")
