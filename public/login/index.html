@@ -84,6 +84,9 @@
             } else {
                 json = await res.json()
                 window.localStorage.setItem("logincookie", json.LoginCookie)
+                window.localStorage.setItem("firstname", firstName)
+                window.localStorage.setItem("lastname", lastName)
+                window.location.replace("/")
             }
         })
     }

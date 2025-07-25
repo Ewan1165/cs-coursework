@@ -11,7 +11,8 @@ mimetypes = {
     ".html": "text/html",
     ".js": "application/javascript",
     ".css": "text/css",
-    ".ico": "image/x-icon"
+    ".ico": "image/x-icon",
+    ".svg": "image/svg+xml"
 }
 
 #Serve the requested file if it exists in public directory
@@ -36,12 +37,13 @@ def serveStatic(filepath):
 def serveLandingPage():
     return static_file("index.html", root="public")
 
-#Apis
+#Employee Apis
 
 #Test Login status code 230: logged in and is an employee, 231: logged in and is a manager, 232: not logged in
 @app.route("/api/testLogin", method="POST")
 def testLogin():
     authHeader = json.loads(request.get_header("authorization"))
+    print(authHeader)
     loginStatus = db.userLoginStatusHeader(authHeader)
     match loginStatus:
         case 0:
@@ -67,11 +69,23 @@ def apiLogin():
     response.content_type = 'application/json'
     return json.dumps({"LoginCookie": newCookie})
 
+#Logs user out by deleting their cookie
 @app.route("/api/logout", method="POST")
 def apiLogout():
     authHeader = json.loads(request.get_header("authorization"))
     loginStatus = db.userLoginStatusHeader(authHeader)
     if loginStatus in [1, 2]:
         db.deleteCookie(authHeader["FirstName"], authHeader["LastName"])
+
+#Admin Apis
+
+@app.route("/api/admin/getManaged", method="POST")
+def getManaged():
+    authHeader = json.loads(request.get_header("authorization"))
+    if not db.isAdminStatusHeader(authHeader):
+        response.status = 401
+        return
+    response.content_type = 'application/json'
+    return json.dumps(db.getManagedBy(authHeader["FirstName"], authHeader["LastName"]))
 
 run(app, host="localhost", port=3000)

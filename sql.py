@@ -42,6 +42,7 @@ class Database:
             return 0
         if cookie == None or cookie != logincookie:
             return 0
+        print("LOGGED IN")
         if manager == 0:
             return 2
         else:
@@ -50,6 +51,9 @@ class Database:
     def userLoginStatusHeader(this, header):
         return this.userLoginStatus(header["FirstName"], header["LastName"], header["LoginCookie"])
     
+    def isAdminStatusHeader(this, header):
+        return (this.userLoginStatusHeader(header) == 2)
+
     def testPassword(this, firstname, lastname, password):
         dbPassword = this.fetchOne("SELECT Password FROM tblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))[0]
         return (dbPassword == password)
@@ -59,3 +63,7 @@ class Database:
 
     def deleteCookie(this, firstname, lastname):
         this.query("UPDATE tblUsers SET LoginCookie = NULL WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))
+
+    def getManagedBy(this, firstname, lastname):
+        adminId = this.fetchOne("SELECT UserID FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))[0]
+        return this.fetch("SELECT FirstName, LastName FROM TblUsers WHERE Manager = ?;", (adminId,))
