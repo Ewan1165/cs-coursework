@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homepage</title>
+    <style>
+        * {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        div {
+            display: flex;
+        }
+        body {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            flex-direction: column;
+            background-color: #f8f4f4;
+        }
+        #topcontainer {
+            width: 100vw;
+            height: 7vh;
+        }
+        #midcontainer {
+            width: 100vw;
+            height: 3vh;
+        }
+        #passbtn {
+            margin-right: 2vw;
+            margin-left: 2vw;
+            border-radius: 0;
+            background-color: white;
+        }
+        #logoutbtn {
+            border-radius: 0;
+            background-color: white;
+        }
+        .pushright {
+            margin-left: auto;
+            margin-right: 2vw;
+        }
+        .top-img {
+            height: 6.8vh;
+        }
+        .blank-button {
+            background: none;
+            border: none;
+            height: 8vh;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="topcontainer">
+        <button class="blank-button">
+            <img class="top-img" src="/resources/notification-bell.svg" alt="Notification">
+        </button>
+        <button class="blank-button">
+            <img class="top-img" src="/resources/messages-icon.svg" alt="Notification">
+        </button>
+        <h1 id="username" class="pushright"></h1>
+    </div>
+    <div id="midcontainer">
+        <div class="pushright">
+            <button id="passbtn">Change Password</button>
+            <button id="logoutbtn">Log Out</button>
+        </div>
+    </div>
+</body>
+
+<script>
+    const username = document.getElementById("username")
+    username.innerHTML = window.localStorage.getItem("firstname") + " " + window.localStorage.getItem("lastname")
+
+    document.getElementById("logoutbtn").onclick = function() {
+        fetch("/api/logout", {
+            method: "POST",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                }
+            )}
+        }).then(res => {
+            window.localStorage.clear("firstname")
+            window.localStorage.clear("lastname")
+            window.localStorage.clear("logincookie")
+            window.location.replace("/login")
+        })
+    }
+</script>
+
+</html>

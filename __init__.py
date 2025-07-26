@@ -105,6 +105,10 @@ def createAccount():
         return
     bodyData = json.loads(request.body.read())
     print(bodyData)
-    db.createAccount(bodyData["FirstName"], bodyData["LastName"], bodyData["PhoneNum"], bodyData["Manager"])
+    success = db.createAccount(bodyData["FirstName"], bodyData["LastName"], bodyData["PhoneNum"], bodyData["Manager"])
+    if success == 0:
+        response.status = 240
+    if success == 1:
+        response.status = 241
 
 run(app, host="localhost", port=3000)

@@ -51,9 +51,16 @@
             margin-bottom: 1.5vh;
             margin-top: 0.5vh;
         }
+        
+        #backbutton {
+            position: absolute;
+            top: 2vh;
+            left: 2vw;
+        }
     </style>
 </head>
 <body>
+    <button id="backbutton">Back</button>
     <div id="container">
         <div id="loginBox">
             <label for="firstName">First Name</label>
@@ -71,6 +78,10 @@
 
 <script>
     async function main() {
+        document.getElementById("backbutton").onclick = function() {
+            window.location.replace("/admin/home")
+        }
+
         const managerDropdown = document.getElementById("managerDropdown")
 
         const firstNameInput = document.getElementById("firstName")
@@ -99,6 +110,10 @@
 
         const loginBtn = document.getElementById("loginButton")
         loginBtn.onclick = async function() {
+            if (firstNameInput.value.includes(" ") || lastNameInput.value.includes(" ")) {
+                alert("Names cannot contain spaces")
+                return
+            }
             fetch("/api/admin/createaccount", {
                 method: "POST",
                 body: JSON.stringify({
@@ -113,6 +128,12 @@
                         LastName: window.localStorage.getItem("lastname"),
                         LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
                     })
+                }
+            }).then(res => {
+                if (res.status == 241) {
+                    alert("User with this name already exists")
+                } else {
+                    window.location.replace("/admin/home")
                 }
             })
         }

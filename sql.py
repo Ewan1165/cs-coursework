@@ -72,6 +72,8 @@ class Database:
         return this.fetch("SELECT FirstName, LastName FROM TblUsers WHERE Manager = 0;")
     
     def createAccount(this, firstname, lastname, phonenum, manager):
-        print("HIIIIII")
+        if (this.fetchOne("SELECT 1 FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname)) != None):
+            return 1
         managerId = this.fetchOne("SELECT UserID FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (manager[0], manager[1]))[0]
         this.query("INSERT INTO TblUsers (FirstName, LastName, PhoneNumber, Password, Manager) VALUES (?, ?, ?, ?, ?);", (firstname, lastname, phonenum, "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8", managerId))
+        return 0

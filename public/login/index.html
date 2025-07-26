@@ -68,6 +68,11 @@
         const firstName = firstNameInput.value
         const lastName = lastNameInput.value
         const password = passwordInput.value
+
+        if ([firstName, lastName, password].includes("")) {
+            alert("Fill all fields")
+            return
+        }
         
         fetch("/api/login", {
             method: "POST",
