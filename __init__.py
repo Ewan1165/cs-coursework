@@ -88,4 +88,23 @@ def getManaged():
     response.content_type = 'application/json'
     return json.dumps(db.getManagedBy(authHeader["FirstName"], authHeader["LastName"]))
 
+@app.route("/api/admin/getmanagers")
+def getManagers():
+    authHeader = json.loads(request.get_header("authorization"))
+    if not db.isAdminStatusHeader(authHeader):
+        response.status = 401
+        return
+    response.content_type = 'application/json'
+    return json.dumps(db.getManagers())
+
+@app.route("/api/admin/createaccount", method="POST")
+def createAccount():
+    authHeader = json.loads(request.get_header("authorization"))
+    if not db.isAdminStatusHeader(authHeader):
+        response.status = 401
+        return
+    bodyData = json.loads(request.body.read())
+    print(bodyData)
+    db.createAccount(bodyData["FirstName"], bodyData["LastName"], bodyData["PhoneNum"], bodyData["Manager"])
+
 run(app, host="localhost", port=3000)

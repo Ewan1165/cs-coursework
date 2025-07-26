@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        * {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: large;
+        }
+        
+        body {
+            background-color: #f8f4f4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #loginBox {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            width: 28vw;
+            height: 35vh;
+            border-radius: 1rem;
+            border-color: black;
+            border-style: solid;
+            background: white;
+            margin-bottom: 15vh;
+        }
+
+        .textInput {
+            display: flex;
+            width: 12vw;
+            height: 2vh;
+            margin-top: 0.5vh;
+            margin-bottom: 1.5vh;
+        }
+
+        #managerDropdown {
+            display: flex;
+            width: auto;
+            height: 2.9vh;
+            margin-bottom: 1.5vh;
+            margin-top: 0.5vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="loginBox">
+            <label for="firstName">First Name</label>
+            <input id="firstName" title="firstName" class="textInput" type="text" />
+            <label for="lastName">Surname</label>
+            <input id="lastName" title="lastName" class="textInput" type="text" />
+            <label for="phoneNum">Phone Number</label>
+            <input id="phoneNum" title="phoneNum" class="textInput" type="text" />
+            <label for="manager">Manager</label>
+            <select title="manager" name="manager" id="managerDropdown"></select>
+            <button id="loginButton">Create Account</button>
+        </div>
+    </div>
+</body>
+
+<script>
+    async function main() {
+        const managerDropdown = document.getElementById("managerDropdown")
+
+        const firstNameInput = document.getElementById("firstName")
+        const lastNameInput = document.getElementById("lastName")
+        const phoneNumInput = document.getElementById("phoneNum")
+
+        const managersRes = await fetch("/api/admin/getmanagers", {
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                })
+            }
+        })
+
+        const managers = await managersRes.json()
+
+        for (manager in managers) {
+            console.log(managers)
+            const option = document.createElement("option")
+            option.value = manager
+            option.innerHTML = managers[manager][0] + " " + managers[manager][1]
+            managerDropdown.appendChild(option)
+        }
+
+        const loginBtn = document.getElementById("loginButton")
+        loginBtn.onclick = async function() {
+            fetch("/api/admin/createaccount", {
+                method: "POST",
+                body: JSON.stringify({
+                    FirstName: firstNameInput.value,
+                    LastName: lastNameInput.value,
+                    PhoneNum: phoneNumInput.value,
+                    Manager: managers[managerDropdown.value]
+                }),
+                headers: {
+                    authorization: JSON.stringify({
+                        FirstName: window.localStorage.getItem("firstname"),
+                        LastName: window.localStorage.getItem("lastname"),
+                        LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                    })
+                }
+            })
+        }
+    }
+    main()
+</script>
+
+</html>

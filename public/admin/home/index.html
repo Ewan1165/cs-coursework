@@ -78,6 +78,10 @@
     const bottomContainer = document.getElementById("bottomContainer")
     const username = document.getElementById("username")
     username.innerHTML = window.localStorage.getItem("firstname") + " " + window.localStorage.getItem("lastname")
+    const createNewBtn = document.getElementById("createNewBtn")
+    createNewBtn.onclick = function() {
+        window.location.replace("/admin/createaccount")
+    }
 
     async function main() {
         const managedRes = await fetch("/api/admin/getManaged", {

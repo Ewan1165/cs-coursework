@@ -67,3 +67,11 @@ class Database:
     def getManagedBy(this, firstname, lastname):
         adminId = this.fetchOne("SELECT UserID FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))[0]
         return this.fetch("SELECT FirstName, LastName FROM TblUsers WHERE Manager = ?;", (adminId,))
+
+    def getManagers(this):
+        return this.fetch("SELECT FirstName, LastName FROM TblUsers WHERE Manager = 0;")
+    
+    def createAccount(this, firstname, lastname, phonenum, manager):
+        print("HIIIIII")
+        managerId = this.fetchOne("SELECT UserID FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (manager[0], manager[1]))[0]
+        this.query("INSERT INTO TblUsers (FirstName, LastName, PhoneNumber, Password, Manager) VALUES (?, ?, ?, ?, ?);", (firstname, lastname, phonenum, "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8", managerId))
