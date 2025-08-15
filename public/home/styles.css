@@ -1,0 +1,75 @@
+
+* {
+    font-family: Arial, Helvetica, sans-serif;
+}
+div {
+    display: flex;
+}
+body {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    flex-direction: column;
+    background-color: #f8f4f4;
+}
+#topcontainer {
+    width: 100vw;
+    height: 7vh;
+}
+#midcontainer {
+    width: 100vw;
+    height: 3vh;
+}
+#bottomcontainer {
+    width: 100vw;
+    height: 90vh;
+    flex-direction: row;
+}
+#leftcontainer {
+    height: 40vh;
+    width: 40vw;
+}
+#rightcontainer {
+    height: 90vh;
+    width: 60vw;
+}
+#requestscontainer {
+    width: 40vw;
+    flex-direction: column;
+}
+#requesttypecontainer {
+    display: block;
+}
+#requesttimcontainer {
+    flex-direction: column;
+}
+#passbtn {
+    margin-right: 2vw;
+    margin-left: 2vw;
+    border-radius: 0;
+    background-color: white;
+}
+#logoutbtn {
+    border-radius: 0;
+    background-color: white;
+}
+#submitbtn {
+    width: 10vw;
+}
+#requestlength {
+    width: 10vw;
+}
+.pushright {
+    margin-left: auto;
+    margin-right: 2vw;
+}
+.top-img {
+    height: 6.8vh;
+}
+.blank-button {
+    background: none;
+    border: none;
+    height: 8vh;
+}

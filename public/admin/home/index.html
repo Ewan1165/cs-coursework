@@ -26,12 +26,20 @@
         }
         #bottomContainer {
             width: 100vw;
-            height: 91vh;
+            height: 60vh;
             margin: 0;
             padding: 0;
             flex-direction: column;
             overflow-y: scroll;
             overflow-x: hidden;
+        }
+        #requestscontainer {
+            overflow-x: hidden;
+            overflow-y: scroll;
+            width: 100vw;
+            height: 31vh;
+            flex-direction: column;
+            padding: 1rem;
         }
         #createNewBtn {
             height: 2vh;
@@ -57,6 +65,15 @@
         .top-img {
             height: 6.8vh;
         }
+        .requestdiv {
+            height: 5vh;
+            width: 100vw;
+            align-items: center;
+        }
+        .acceptbutton {
+            height: 3vh;
+            margin-left: 1rem;
+        }
     </style>
 </head>
 
@@ -72,10 +89,14 @@
         <h1 id="username"></h1>
     </div>
     <div id="bottomContainer"></div>
-    <h1>HI</h1>
+    <div id="requestscontainer">
+        <h1>Requests:</h1>
+    </div>
+    
 </body>
 
 <script>
+    const requestscontainer = document.getElementById("requestscontainer")
     const bottomContainer = document.getElementById("bottomContainer")
     const username = document.getElementById("username")
     username.innerHTML = window.localStorage.getItem("firstname") + " " + window.localStorage.getItem("lastname")
@@ -84,8 +105,39 @@
         window.location.replace("/admin/createaccount")
     }
 
+    //DO NOWWWWWWW!!!!!!!!!!!!!!!!!!!
+    function accept(id) {
+        console.log(`accept ${id}`)
+    }
+
+    function decline(id) {
+        console.log(`decline ${id}`)
+    }
+
     async function main() {
-        const managedRes = await fetch("/api/admin/getManaged", {
+        const requests = await (await fetch("/api/admin/getrequests", {
+            method: "POST",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                })
+            }
+        })).json()
+
+        for (req of requests) {
+            const div = document.createElement("div")
+            div.classList.add("requestdiv")
+            requestscontainer.appendChild(div)
+            div.innerHTML = `
+                <h1>${req[3]} ${req[4]} - ${["Overtime", "Leave"][req[0]]} - ${new Date(req[1]).toLocaleString()} for ${String(Math.floor(req[2]/3600000)).padStart(2,'0')}:${String(Math.floor(req[2]/60000)%60).padStart(2,'0')}</h1>
+                <button onclick="accept(${req[5]})" class="acceptbutton">Accept</button>
+                <button onclick="decline(${req[5]})" class="acceptbutton">Decline</button>
+            `
+        }
+
+        const managedRes = await fetch("/api/admin/getmanaged", {
             method: "POST",
             headers: {
                 authorization: JSON.stringify({

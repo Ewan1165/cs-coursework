@@ -4,53 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Homepage</title>
-    <style>
-        * {
-            font-family: Arial, Helvetica, sans-serif;
-        }
-        div {
-            display: flex;
-        }
-        body {
-            display: flex;
-            width: 100vw;
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-            flex-direction: column;
-            background-color: #f8f4f4;
-        }
-        #topcontainer {
-            width: 100vw;
-            height: 7vh;
-        }
-        #midcontainer {
-            width: 100vw;
-            height: 3vh;
-        }
-        #passbtn {
-            margin-right: 2vw;
-            margin-left: 2vw;
-            border-radius: 0;
-            background-color: white;
-        }
-        #logoutbtn {
-            border-radius: 0;
-            background-color: white;
-        }
-        .pushright {
-            margin-left: auto;
-            margin-right: 2vw;
-        }
-        .top-img {
-            height: 6.8vh;
-        }
-        .blank-button {
-            background: none;
-            border: none;
-            height: 8vh;
-        }
-    </style>
+    <link rel="stylesheet" href="/home/styles.css">
 </head>
 
 <body>
@@ -69,11 +23,40 @@
             <button id="logoutbtn">Log Out</button>
         </div>
     </div>
+    <div id="bottomcontainer">
+        <div id="leftcontainer">
+            <div id="requestscontainer">
+                <div id="requesttypecontainer">
+                    <input id="overtime" type="radio" name="requesttype">
+                    <label for="overtime">Overtime</label>
+                    <input id="leave" type="radio" name="requesttype">
+                    <label for="leave">Leave</label>
+                </div>
+                <div id="requesttimecontainer">
+                    <label for="requestdate">Date</label>
+                    <input type="date" name="requestdate" id="requestdate">
+                    <label for="requesttime">Time</label>
+                    <input type="time" name="requesttime" id="requesttime">
+                </div>
+                <label for="requestlength">Length</label>
+                <input type="time" name="requestlength" id="requestlength">
+                <button id="submitbtn">Submit</button>
+            </div>
+        </div>
+        <div id="rightcontainer"></div>
+    </div>
 </body>
 
 <script>
     const username = document.getElementById("username")
     username.innerHTML = window.localStorage.getItem("firstname") + " " + window.localStorage.getItem("lastname")
+
+    const overtime = document.getElementById("overtime")
+    const leave = document.getElementById("leave")
+
+    const date = document.getElementById("requestdate")
+    const time = document.getElementById("requesttime")
+    const length = document.getElementById("requestlength")
 
     document.getElementById("logoutbtn").onclick = function() {
         fetch("/api/logout", {
@@ -90,6 +73,34 @@
             window.localStorage.clear("lastname")
             window.localStorage.clear("logincookie")
             window.location.replace("/login")
+        })
+    }
+
+    document.getElementById("submitbtn").onclick = function() {
+        if (leave.checked == overtime.checked) {
+            window.alert("Select a type of request!")
+            return
+        }
+        let requesttype = overtime.checked ? 0 : 1
+        let timestamp = date.valueAsDate.getTime() + time.valueAsNumber
+
+        let temptime = length.value.split(":").map(Number)
+        let lengthms = (3600000 * temptime[0]) + (60000 * temptime[1])
+
+        fetch("/api/createrequest", {
+            method: "POST",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                })
+            },
+            body: JSON.stringify({
+                requesttype: requesttype,
+                timestamp: timestamp,
+                length: lengthms
+            })
         })
     }
 </script>

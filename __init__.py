@@ -77,9 +77,18 @@ def apiLogout():
     if loginStatus in [1, 2]:
         db.deleteCookie(authHeader["FirstName"], authHeader["LastName"])
 
+#Insers a request into the database
+@app.route("/api/createrequest", method="POST")
+def createrequest():
+    authHeader = json.loads(request.get_header("authorization"))
+    loginStatus = db.userLoginStatusHeader(authHeader)
+    if loginStatus in [1, 2]:
+        body = json.loads(request.body.read())
+        db.createRequestFromHeader(authHeader, body["requesttype"], body["timestamp"], body["length"])
+
 #Admin Apis
 
-@app.route("/api/admin/getManaged", method="POST")
+@app.route("/api/admin/getmanaged", method="POST")
 def getManaged():
     authHeader = json.loads(request.get_header("authorization"))
     if not db.isAdminStatusHeader(authHeader):
@@ -110,5 +119,15 @@ def createAccount():
         response.status = 240
     if success == 1:
         response.status = 241
+
+@app.route("/api/admin/getrequests", method="POST")
+def getrequests():
+    authHeader = json.loads(request.get_header("authorization"))
+    if not db.isAdminStatusHeader(authHeader):
+        response.status = 401
+        return
+
+    response.content_type = 'application/json'
+    return json.dumps(db.getRequestsByHeader(authHeader))
 
 run(app, host="localhost", port=3000)

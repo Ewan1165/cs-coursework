@@ -77,7 +77,7 @@ def hash(x):
             b = a
             a = (temp1 + temp2) & 0xffffffff
 
-        #Appends the working values to the inital variables
+        #Appends the working values to the inital variables, using a mask to ensure the result isnt longer than 256 bits
         h0  = (h0 + a) & 0xffffffff
         h1  = (h1 + b) & 0xffffffff
         h2  = (h2 + c) & 0xffffffff
