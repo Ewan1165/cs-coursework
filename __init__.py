@@ -130,4 +130,22 @@ def getrequests():
     response.content_type = 'application/json'
     return json.dumps(db.getRequestsByHeader(authHeader))
 
+@app.route("/api/admin/acceptrequest", method="POST")
+def acceptrequest():
+    authHeader = json.loads(request.get_header("authorization"))
+    if not db.isAdminStatusHeader(authHeader):
+        response.status = 401
+        return
+    
+    db.acceptRequest(json.loads(request.body.read())["requestid"])
+
+@app.route("/api/admin/deleterequest", method="POST")
+def deleterequest():
+    authHeader = json.loads(request.get_header("authorization"))
+    if not db.isAdminStatusHeader(authHeader):
+        response.status = 401
+        return
+    
+    db.deleterequest(json.loads(request.body.read())["requestid"])
+
 run(app, host="localhost", port=3000)

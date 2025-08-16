@@ -45,9 +45,14 @@
             height: 2vh;
             margin-left: 2vw;
         }
-        #username {
+        #rightdiv {
             margin-left: auto;
             margin-right: 2vw;
+            align-items: center;
+        }
+        #logOutBtn {
+            margin-right: 2vw;
+            height: 2vh;
         }
         .employeeDiv {
             width: 95vw;
@@ -86,7 +91,10 @@
             <img class="top-img" src="/resources/messages-icon.svg" alt="Notification">
         </button>
         <button id="createNewBtn">Create New User</button>
-        <h1 id="username"></h1>
+        <div id="rightdiv">
+            <button id="logOutBtn">Log Out</button>
+            <h1 id="username"></h1>
+        </div>
     </div>
     <div id="bottomContainer"></div>
     <div id="requestscontainer">
@@ -98,20 +106,69 @@
 <script>
     const requestscontainer = document.getElementById("requestscontainer")
     const bottomContainer = document.getElementById("bottomContainer")
+
     const username = document.getElementById("username")
     username.innerHTML = window.localStorage.getItem("firstname") + " " + window.localStorage.getItem("lastname")
+
     const createNewBtn = document.getElementById("createNewBtn")
     createNewBtn.onclick = function() {
         window.location.replace("/admin/createaccount")
     }
 
-    //DO NOWWWWWWW!!!!!!!!!!!!!!!!!!!
+    const logoutbtn = document.getElementById("logOutBtn")
+    logoutbtn.onclick = function() {
+        fetch("/api/logout", {
+            method: "POST",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                }
+            )}
+        }).then(res => {
+            window.localStorage.clear("firstname")
+            window.localStorage.clear("lastname")
+            window.localStorage.clear("logincookie")
+            window.location.replace("/login")
+        })
+    }
+
     function accept(id) {
-        console.log(`accept ${id}`)
+        fetch("/api/admin/acceptrequest", {
+            method: "POST",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                })
+            },
+            body: JSON.stringify({
+                requestid: id
+            })
+        }).then(() => {
+            location.reload()
+        })
+        
     }
 
     function decline(id) {
-        console.log(`decline ${id}`)
+        fetch("/api/admin/deleterequest", {
+            method: "POST",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                })
+            },
+            body: JSON.stringify({
+                requestid: id
+            })
+        }).then(() => {
+            location.reload()
+        })
     }
 
     async function main() {

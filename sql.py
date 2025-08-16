@@ -84,3 +84,9 @@ class Database:
     def getRequestsByHeader(this, header):
         adminId = this.fetchOne("SELECT UserID FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (header["FirstName"], header["LastName"]))[0]
         return this.fetch("SELECT RequestType, StartTime, Length, FirstName, LastName, RequestID FROM TblUsers, TblRequests WHERE TblUsers.UserID = TblRequests.UserID AND Manager = ? AND Accepted = false;", (adminId, ))
+    
+    def acceptRequest(this, id):
+        this.query("UPDATE TblRequests SET Accepted = 1 WHERE RequestID = ?;", (id, ))
+
+    def deleterequest(this, id):
+        this.query("DELETE FROM TblRequests WHERE RequestID = ?;", (id, ))
