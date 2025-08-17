@@ -35,6 +35,7 @@ class Database:
         cursor.execute(query, data)
         return cursor.fetchall()
     
+    #Checks the login status based on name and cookie returns 0 if they arent logged in, 1 if they are an employee or 2 if they are a manager
     def userLoginStatus(this, firstname, lastname, logincookie):
         try:
             cookie, manager = this.fetchOne("SELECT LoginCookie, Manager FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))
@@ -48,11 +49,12 @@ class Database:
             return 1
         
     def userLoginStatusHeader(this, header):
+        print("!!!!!!!!!!!!!!!!!")
+        print(header)
+        print(type(header))
         return this.userLoginStatus(header["FirstName"], header["LastName"], header["LoginCookie"])
-    
-    def isAdminStatusHeader(this, header):
-        return (this.userLoginStatusHeader(header) == 2)
 
+    #Returns true if the password is the same as the one stored in the database
     def testPassword(this, firstname, lastname, password):
         dbPassword = this.fetchOne("SELECT Password FROM tblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))[0]
         return (dbPassword == password)

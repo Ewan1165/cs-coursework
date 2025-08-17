@@ -15,7 +15,7 @@ mimetypes = {
     ".svg": "image/svg+xml"
 }
 
-#Serve the requested file if it exists in public directory
+#Serve the requested file if it exists in public directory (for html, css and other resource files)
 @app.route("/<filepath:path>")
 def serveStatic(filepath):
     fullPath = os.path.join("public", filepath)
@@ -32,7 +32,7 @@ def serveStatic(filepath):
     else:
         return HTTPError(404, "Page not found")
 
-#Serve the landing page
+#Serve the landing page which redirects the user to the correct page based on their login status
 @app.route("/")
 def serveLandingPage():
     return static_file("index.html", root="public")
@@ -54,7 +54,7 @@ def testLogin():
             response.status = 231
     return
 
-#Log user in status code 232: password is incorrect
+#Log user in status code 230: password is correct (sent back new login cookie) 232: password is incorrect
 @app.route("/api/login", method="POST")
 def apiLogin():
     authHeader = json.loads(request.get_header("authorization"))
@@ -88,28 +88,29 @@ def createrequest():
 
 #Admin Apis
 
+#Gets all first and last names of the users who are managed by the manager who sent the web request
 @app.route("/api/admin/getmanaged", method="POST")
 def getManaged():
     authHeader = json.loads(request.get_header("authorization"))
-    if not db.isAdminStatusHeader(authHeader):
+    if db.userLoginStatusHeader(authHeader) != 2:
         response.status = 401
         return
     response.content_type = 'application/json'
     return json.dumps(db.getManagedBy(authHeader["FirstName"], authHeader["LastName"]))
 
+#Gets the first and last names of all managers in the database
 @app.route("/api/admin/getmanagers")
 def getManagers():
-    authHeader = json.loads(request.get_header("authorization"))
-    if not db.isAdminStatusHeader(authHeader):
+    if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
         response.status = 401
         return
     response.content_type = 'application/json'
     return json.dumps(db.getManagers())
 
+#Create a new employee account with the password "password"
 @app.route("/api/admin/createaccount", method="POST")
 def createAccount():
-    authHeader = json.loads(request.get_header("authorization"))
-    if not db.isAdminStatusHeader(authHeader):
+    if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
         response.status = 401
         return
     bodyData = json.loads(request.body.read())
@@ -120,29 +121,30 @@ def createAccount():
     if success == 1:
         response.status = 241
 
+#Gets all leave and overtime requests from employees managed by the user who sent the web request
 @app.route("/api/admin/getrequests", method="POST")
 def getrequests():
     authHeader = json.loads(request.get_header("authorization"))
-    if not db.isAdminStatusHeader(authHeader):
+    if db.userLoginStatusHeader(authHeader) != 2:
         response.status = 401
         return
 
     response.content_type = 'application/json'
     return json.dumps(db.getRequestsByHeader(authHeader))
 
+#Accepts an overtime or leave request by setting the value of its accepted attribute to true
 @app.route("/api/admin/acceptrequest", method="POST")
 def acceptrequest():
-    authHeader = json.loads(request.get_header("authorization"))
-    if not db.isAdminStatusHeader(authHeader):
+    if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
         response.status = 401
         return
     
     db.acceptRequest(json.loads(request.body.read())["requestid"])
 
+#Deletes an overtime or leave request from the database
 @app.route("/api/admin/deleterequest", method="POST")
 def deleterequest():
-    authHeader = json.loads(request.get_header("authorization"))
-    if not db.isAdminStatusHeader(authHeader):
+    if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
         response.status = 401
         return
     
