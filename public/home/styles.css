@@ -30,6 +30,7 @@ body {
 #leftcontainer {
     height: 40vh;
     width: 40vw;
+    flex-direction: column;
 }
 #rightcontainer {
     height: 90vh;
@@ -38,6 +39,7 @@ body {
 #requestscontainer {
     width: 40vw;
     flex-direction: column;
+    margin-bottom: 5vh;
 }
 #requesttypecontainer {
     display: block;
@@ -60,6 +62,10 @@ body {
 }
 #requestlength {
     width: 10vw;
+}
+#timetablecanvas {
+    height: 90vh;
+    width: 90vh;
 }
 .pushright {
     margin-left: auto;

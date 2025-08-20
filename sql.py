@@ -1,5 +1,6 @@
 import sqlite3 as sql
 import tableData
+from datetime import datetime, timedelta
 
 #define a class to perform all interactions with the database with all validations
 class Database:
@@ -48,10 +49,10 @@ class Database:
         else:
             return 1
         
+    def getUserIdFromHeader(this, header):
+        return this.fetchOne("SELECT UserID FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (header["FirstName"], header["LastName"]))[0]
+
     def userLoginStatusHeader(this, header):
-        print("!!!!!!!!!!!!!!!!!")
-        print(header)
-        print(type(header))
         return this.userLoginStatus(header["FirstName"], header["LastName"], header["LoginCookie"])
 
     #Returns true if the password is the same as the one stored in the database
@@ -92,3 +93,24 @@ class Database:
 
     def deleterequest(this, id):
         this.query("DELETE FROM TblRequests WHERE RequestID = ?;", (id, ))
+
+    def setClockStatus(this, header, status):
+        userId = this.getUserIdFromHeader(header)
+        currTime = int(time())
+        this.query("INSERT INTO TblClockIn (UserID, Time, InOrOut) VALUES (?, ?, ?);", (userId, currTime, status))
+
+    def getClockStatus(this, header):
+        return this.fetchOne("SELECT InOrOut FROM TblClockIn, TblUsers WHERE TblUsers.UserID = TblClockIn.UserID AND FirstName = ? AND LastName = ? ORDER BY Time DESC;", (header["FirstName"], header["LastName"]))[0]
+
+    def getWeekEvents(this, header):
+        now = datetime.now()
+        startofweek = now - timedelta(days=now.weekday())
+        startofweek = startofweek.replace(hour=0, minute=0, second=0, microsecond=0)
+        startofweek = int(startofweek.timestamp()) * 1000
+        endofweek = startofweek + 604800000
+        
+        events = this.fetch("""
+                   SELECT RequestType, StartTime, Length FROM TblRequests, TblUsers
+                   WHERE TblRequests.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Accepted = true
+                   AND StartTime < ? AND StartTime + Length > ?;""", (header["FirstName"], header["LastName"], endofweek, startofweek))
+        return events

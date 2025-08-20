@@ -20,7 +20,7 @@
     <div id="midcontainer">
         <div class="pushright">
             <button id="passbtn">Change Password</button>
-            <button id="logoutbtn">Log Out</button>
+            <button id="logoutbtn" onclick="logout()">Log Out</button>
         </div>
     </div>
     <div id="bottomcontainer">
@@ -40,10 +40,16 @@
                 </div>
                 <label for="requestlength">Length</label>
                 <input type="time" name="requestlength" id="requestlength">
-                <button id="submitbtn">Submit</button>
+                <button id="submitbtn" onclick="submit()">Submit</button>
+            </div>
+            <div id="clockincontainer">
+                <button id="clockinbtn" onclick="clockstatus(1)">Clock In</button>
+                <button id="clockoutbtn" onclick="clockstatus(0)">Clock Out</button>
             </div>
         </div>
-        <div id="rightcontainer"></div>
+        <div id="rightcontainer">
+            <canvas id="timetablecanvas" width="1000" height="1000"></canvas>
+        </div>
     </div>
 </body>
 
@@ -58,7 +64,77 @@
     const time = document.getElementById("requesttime")
     const length = document.getElementById("requestlength")
 
-    document.getElementById("logoutbtn").onclick = function() {
+    const clockinbtn = document.getElementById("clockinbtn")
+    const clockoutbtn = document.getElementById("clockoutbtn")
+
+    fetch("/api/getclockstatus", {
+        headers: {
+            authorization: JSON.stringify({
+                FirstName: window.localStorage.getItem("firstname"),
+                LastName: window.localStorage.getItem("lastname"),
+                LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+            }
+        )}
+    }).then(res => res.json()).then(json => {
+        if (json.status == 0) {
+            clockinbtn.style.backgroundColor = "green"
+            clockoutbtn.style.backgroundColor = "red"
+        } else if (json.status == 1) {
+            clockinbtn.style.backgroundColor = "red"
+            clockoutbtn.style.backgroundColor = "green"
+        }
+    })
+
+    const canvas = document.getElementById("timetablecanvas")
+    const ctx = canvas.getContext("2d")
+
+    const now = new Date()
+    now.setDate(now.getDate() - ((now.getDay()+6) % 7))
+    const weekbeginning = now.getDate() + " " + now.toLocaleString('en-GB', { month: 'long' })
+    const weekbeginningtime = now.getTime() + 3600000
+
+    ctx.strokeRect(150,150,700,700)
+    ctx.font = "50px Arial"
+    ctx.textAlign = "center"
+    ctx.fillText(`Week beginning ${weekbeginning}`,500,80)
+
+    for (let i = 250; i < 850; i += 100) {
+        ctx.moveTo(i, 150)
+        ctx.lineTo(i, 850)
+        ctx.stroke()
+    }
+    ctx.font = "20px Arial"
+    ctx.textAlign = "right"
+    ctx.textBaseline = "middle"
+    for (let i = 0; i <= 24; i += 3) {
+        ctx.fillText(`${i}:00`, 130, 150+(i*(700/24)))
+    }
+
+    fetch("/api/gettimetable", {
+        method: "GET",
+        headers: {
+            authorization: JSON.stringify({
+                FirstName: window.localStorage.getItem("firstname"),
+                LastName: window.localStorage.getItem("lastname"),
+                LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+            }
+        )}
+    }).then(res => res.json()).then(json => {
+        console.log(json)
+        for (event of json) {
+            const startoffsetms = event[1] - weekbeginningtime
+            const day = Math.ceil(startoffsetms / 86400000)
+            const through = (startoffsetms % 86400000) / 86400000
+            if (event[0] == 0) {
+                ctx.fillStyle = "blue"
+            } else if (event[0] == 1) {
+                ctx.fillStyle = "red"
+            }
+            ctx.fillRect(150 + (day * 100), 150 + (through * 700), 100, event[2]*0.00000810185)
+        }
+    })
+
+    function logout() {
         fetch("/api/logout", {
             method: "POST",
             headers: {
@@ -76,7 +152,7 @@
         })
     }
 
-    document.getElementById("submitbtn").onclick = function() {
+    function submit() {
         if (leave.checked == overtime.checked) {
             window.alert("Select a type of request!")
             return
@@ -101,6 +177,28 @@
                 timestamp: timestamp,
                 length: lengthms
             })
+        })
+    }
+
+    function clockstatus(status) {
+        fetch("/api/setclockstatus", {
+            method: "POST",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                })
+            },
+            body: JSON.stringify({status: status})
+        }).then(() => {
+            if (status == 0) {
+                clockinbtn.style.backgroundColor = "green"
+                clockoutbtn.style.backgroundColor = "red"
+            } else if (status == 1) {
+                clockinbtn.style.backgroundColor = "red"
+                clockoutbtn.style.backgroundColor = "green"
+            }
         })
     }
 </script>

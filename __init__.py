@@ -41,7 +41,7 @@ def serveLandingPage():
 
 #Test Login status code 230: logged in and is an employee, 231: logged in and is a manager, 232: not logged in
 @app.route("/api/testLogin", method="POST")
-def testLogin():
+def api_testLogin():
     authHeader = json.loads(request.get_header("authorization"))
     print(authHeader)
     loginStatus = db.userLoginStatusHeader(authHeader)
@@ -56,7 +56,7 @@ def testLogin():
 
 #Log user in status code 230: password is correct (sent back new login cookie) 232: password is incorrect
 @app.route("/api/login", method="POST")
-def apiLogin():
+def api_Login():
     authHeader = json.loads(request.get_header("authorization"))
     hashedPassword = sha256.hash(authHeader["Password"])
     correctPassword = db.testPassword(authHeader["FirstName"], authHeader["LastName"], hashedPassword)
@@ -71,7 +71,7 @@ def apiLogin():
 
 #Logs user out by deleting their cookie
 @app.route("/api/logout", method="POST")
-def apiLogout():
+def api_Logout():
     authHeader = json.loads(request.get_header("authorization"))
     loginStatus = db.userLoginStatusHeader(authHeader)
     if loginStatus in [1, 2]:
@@ -79,18 +79,42 @@ def apiLogout():
 
 #Insers a request into the database
 @app.route("/api/createrequest", method="POST")
-def createrequest():
+def api_createrequest():
     authHeader = json.loads(request.get_header("authorization"))
     loginStatus = db.userLoginStatusHeader(authHeader)
     if loginStatus in [1, 2]:
         body = json.loads(request.body.read())
         db.createRequestFromHeader(authHeader, body["requesttype"], body["timestamp"], body["length"])
 
+#Create an entry into TblClockIn with InOrOut attribute of body.status
+@app.route("/api/setclockstatus", method="POST")
+def api_setclockstatus():
+    authHeader = json.loads(request.get_header("authorization"))
+    if db.userLoginStatusHeader(authHeader) in [1,2]:
+        status = json.loads(request.body.read())["status"]
+        db.setClockStatus(authHeader, status)
+
+#Returns InOrOut property of last entry in TblClockIn created by currently logged in user
+@app.route("/api/getclockstatus", method="GET")
+def api_getClockStatus():
+    authHeader = json.loads(request.get_header("authorization"))
+    if db.userLoginStatusHeader(authHeader) in [1,2]:
+        status = db.getClockStatus(authHeader)
+        return json.dumps({"status": status})
+
+@app.route("/api/gettimetable", method="GET")
+def api_gettimetable():
+    authHeader = json.loads(request.get_header("authorization"))
+    if db.userLoginStatusHeader(authHeader) in [1,2]:
+        events = db.getWeekEvents(authHeader)
+        response.content_type = 'application/json'
+        return json.dumps(events)
+
 #Admin Apis
 
 #Gets all first and last names of the users who are managed by the manager who sent the web request
 @app.route("/api/admin/getmanaged", method="POST")
-def getManaged():
+def api_getManaged():
     authHeader = json.loads(request.get_header("authorization"))
     if db.userLoginStatusHeader(authHeader) != 2:
         response.status = 401
@@ -100,7 +124,7 @@ def getManaged():
 
 #Gets the first and last names of all managers in the database
 @app.route("/api/admin/getmanagers")
-def getManagers():
+def api_getManagers():
     if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
         response.status = 401
         return
@@ -109,7 +133,7 @@ def getManagers():
 
 #Create a new employee account with the password "password"
 @app.route("/api/admin/createaccount", method="POST")
-def createAccount():
+def api_createAccount():
     if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
         response.status = 401
         return
@@ -123,7 +147,7 @@ def createAccount():
 
 #Gets all leave and overtime requests from employees managed by the user who sent the web request
 @app.route("/api/admin/getrequests", method="POST")
-def getrequests():
+def api_getrequests():
     authHeader = json.loads(request.get_header("authorization"))
     if db.userLoginStatusHeader(authHeader) != 2:
         response.status = 401
@@ -134,7 +158,7 @@ def getrequests():
 
 #Accepts an overtime or leave request by setting the value of its accepted attribute to true
 @app.route("/api/admin/acceptrequest", method="POST")
-def acceptrequest():
+def api_acceptrequest():
     if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
         response.status = 401
         return
@@ -143,7 +167,7 @@ def acceptrequest():
 
 #Deletes an overtime or leave request from the database
 @app.route("/api/admin/deleterequest", method="POST")
-def deleterequest():
+def api_deleterequest():
     if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
         response.status = 401
         return

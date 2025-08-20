@@ -23,7 +23,7 @@
     </div>
     <div id="bottomContainer"></div>
     <div id="requestscontainer">
-        <h1>Requests:</h1>
+        <h1 style="margin-left: 1vw;">Requests:</h1>
     </div>
     
 </body>
@@ -96,6 +96,11 @@
         })
     }
 
+    function viewstats(firstname, lastname) {
+        //todooooo
+        console.log(`${firstname} ${lastname}`)
+    }
+
     async function main() {
         const requests = await (await fetch("/api/admin/getrequests", {
             method: "POST",
@@ -136,6 +141,12 @@
             const name = document.createElement("h1")
             name.innerHTML = employee[0] + " " + employee[1]
             div.appendChild(name)
+            const btnsdiv = document.createElement("div")
+            btnsdiv.innerHTML = `
+                <button onclick="viewstats('${employee[0]}', '${employee[1]}')">View Stats</button>
+            `
+            btnsdiv.classList.add("btnsdiv")
+            div.appendChild(btnsdiv)
             bottomContainer.appendChild(div)
         }
     }
