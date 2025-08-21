@@ -192,4 +192,12 @@ def api_resetpassword():
     body = json.loads(request.body.read())
     db.resetPassword(body["firstname"], body["lastname"])
 
+@app.route("/api/admin/removeuser", method="POST")
+def api_removeuser():
+    if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
+        response.status = 401
+        return
+    body = json.loads(request.body.read())
+    db.removeUser(body["firstname"], body["lastname"])
+
 run(app, host="localhost", port=3000)

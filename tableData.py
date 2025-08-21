@@ -20,7 +20,7 @@ statements = {
             StartTime integer,
             Length integer,
             PRIMARY KEY (RequestID),
-            FOREIGN KEY (UserID) REFERENCES TblUsers(UserID)
+            FOREIGN KEY (UserID) REFERENCES TblUsers(UserID) ON DELETE SET NULL
         );
     """,
     "TblClockIn": """
@@ -30,7 +30,7 @@ statements = {
             Time integer,
             InOrOut integer,
             PRIMARY KEY (ClockInId),
-            FOREIGN KEY (UserID) REFERENCES TblUsers(UserID)
+            FOREIGN KEY (UserID) REFERENCES TblUsers(UserID) ON DELETE SET NULL
         );
     """,
     "TblMessages": """
@@ -41,8 +41,8 @@ statements = {
             Body text,
             Timestamp integer,
             PRIMARY KEY (MessageID),
-            FOREIGN KEY (SenderID) REFERENCES TblUsers(UserID),
-            FOREIGN KEY (ReceiverID) REFERENCES TblUsers(UserID)
+            FOREIGN KEY (SenderID) REFERENCES TblUsers(UserID) ON DELETE SET NULL,
+            FOREIGN KEY (ReceiverID) REFERENCES TblUsers(UserID) ON DELETE SET NULL
         );
     """,
     "TblNotification": """
@@ -54,7 +54,7 @@ statements = {
             MessageID integer,
             Read bool,
             PRIMARY KEY (NotificationID),
-            FOREIGN KEY (UserID) REFERENCES TblUsers(UserID),
+            FOREIGN KEY (UserID) REFERENCES TblUsers(UserID) ON DELETE SET NULL,
             FOREIGN KEY (MessageID) REFERENCES TblMessages(MessageID)
         );
     """

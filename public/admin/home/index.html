@@ -125,7 +125,7 @@
     }
 
     function removeuser(firstname, lastname) {
-        fetch("api/admin/removeuser", {
+        fetch("/api/admin/removeuser", {
             method: "POST",
             headers: {
                 authorization: JSON.stringify({

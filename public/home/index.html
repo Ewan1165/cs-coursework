@@ -93,7 +93,7 @@
     const now = new Date()
     now.setDate(now.getDate() - ((now.getDay()+6) % 7))
     const weekbeginning = now.getDate() + " " + now.toLocaleString('en-GB', { month: 'long' })
-    const weekbeginningtime = now.getTime() + 3600000
+    const weekbeginningtime = now.getTime() + 3600000 - (new Date().getTimezoneOffset()*60000)
 
     //Adds week beginning text
     ctx.strokeRect(150,150,700,700)
@@ -132,6 +132,7 @@
             const startoffsetms = event[1] - weekbeginningtime
             const day = Math.ceil(startoffsetms / 86400000)
             const through = (startoffsetms % 86400000) / 86400000
+            console.log(`Day: ${day}    Through: ${through}    Startoffsetms: ${startoffsetms}`)
             if (event[0] == 0) {
                 ctx.fillStyle = "blue"
             } else if (event[0] == 1) {
