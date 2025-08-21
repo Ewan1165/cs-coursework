@@ -1,6 +1,7 @@
 import sqlite3 as sql
 import tableData
 from datetime import datetime, timedelta
+from time import time
 
 #define a class to perform all interactions with the database with all validations
 class Database:
@@ -100,7 +101,11 @@ class Database:
         this.query("INSERT INTO TblClockIn (UserID, Time, InOrOut) VALUES (?, ?, ?);", (userId, currTime, status))
 
     def getClockStatus(this, header):
-        return this.fetchOne("SELECT InOrOut FROM TblClockIn, TblUsers WHERE TblUsers.UserID = TblClockIn.UserID AND FirstName = ? AND LastName = ? ORDER BY Time DESC;", (header["FirstName"], header["LastName"]))[0]
+        try:
+            return this.fetchOne("SELECT InOrOut FROM TblClockIn, TblUsers WHERE TblUsers.UserID = TblClockIn.UserID AND FirstName = ? AND LastName = ? ORDER BY Time DESC;", (header["FirstName"], header["LastName"]))[0]
+        except:
+            userID = this.getUserIdFromHeader(header)
+            this.query("INSERT INTO TblClockIn (UserID, Time, InOrOut) VALUES (?, ?, 0);", (userID, time()))
 
     def getWeekEvents(this, header):
         now = datetime.now()
@@ -114,3 +119,9 @@ class Database:
                    WHERE TblRequests.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Accepted = true
                    AND StartTime < ? AND StartTime + Length > ?;""", (header["FirstName"], header["LastName"], endofweek, startofweek))
         return events
+    
+    def updatePassword(this, header, hashedpass):
+        this.query("UPDATE TblUsers SET Password = ? WHERE FirstName = ? AND LastName = ?;", (hashedpass, header["FirstName"], header["LastName"]))
+
+    def resetPassword(this, firstname, lastname):
+        this.query("UPDATE TblUsers SET Password = \"5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8\" WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))

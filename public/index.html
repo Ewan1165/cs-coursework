@@ -10,6 +10,7 @@
 
 <script>
     async function main() {
+        //Sends a request to the server to find out if the user is logged in, and if they are an admin, and sends them to the correct page
         let cookie = parseInt(window.localStorage.getItem("logincookie"))
 
         if (cookie == null) {

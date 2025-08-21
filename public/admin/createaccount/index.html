@@ -78,6 +78,7 @@
 
 <script>
     async function main() {
+        //Define the click function for the back button to go back to the homepage
         document.getElementById("backbutton").onclick = function() {
             window.location.replace("/admin/home")
         }
@@ -88,6 +89,7 @@
         const lastNameInput = document.getElementById("lastName")
         const phoneNumInput = document.getElementById("phoneNum")
 
+        //Get all managers from the server
         const managersRes = await fetch("/api/admin/getmanagers", {
             headers: {
                 authorization: JSON.stringify({
@@ -100,6 +102,7 @@
 
         const managers = await managersRes.json()
 
+        //Add an option in the managers dropdown for each manager
         for (manager in managers) {
             console.log(managers)
             const option = document.createElement("option")
@@ -108,6 +111,7 @@
             managerDropdown.appendChild(option)
         }
 
+        //Define the click function of the login button to get all the data from the inputs and send them to the server in a post request
         const loginBtn = document.getElementById("loginButton")
         loginBtn.onclick = async function() {
             if (firstNameInput.value.includes(" ") || lastNameInput.value.includes(" ")) {

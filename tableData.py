@@ -23,16 +23,6 @@ statements = {
             FOREIGN KEY (UserID) REFERENCES TblUsers(UserID)
         );
     """,
-    "TblSlots": """
-        CREATE TABLE TblSlots (
-            SlotID integer,
-            UserID integer,
-            StartTime integer,
-            Length integer,
-            PRIMARY KEY (SlotID),
-            FOREIGN KEY (UserID) REFERENCES TblUsers(UserID)
-        );
-    """,
     "TblClockIn": """
         CREATE TABLE TblClockIn (
             ClockInId integer,

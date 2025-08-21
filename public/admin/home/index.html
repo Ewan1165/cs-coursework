@@ -40,6 +40,7 @@
         window.location.replace("/admin/createaccount")
     }
 
+    //Define the click event of the logout button to send a request to the server to delete the login cookie of the current user then go back to the login page
     const logoutbtn = document.getElementById("logOutBtn")
     logoutbtn.onclick = function() {
         fetch("/api/logout", {
@@ -59,6 +60,7 @@
         })
     }
 
+    //Sends a request to the server to set the accepted value of the request to true
     function accept(id) {
         fetch("/api/admin/acceptrequest", {
             method: "POST",
@@ -78,6 +80,7 @@
         
     }
 
+    //Sends a request to the server to delete the request
     function decline(id) {
         fetch("/api/admin/deleterequest", {
             method: "POST",
@@ -101,7 +104,47 @@
         console.log(`${firstname} ${lastname}`)
     }
 
+    //Reset the users password to "password"
+    function resetpass(firstname, lastname) {
+        fetch("/api/admin/resetpassword", {
+            method: "POST",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                })
+            },
+            body: JSON.stringify({
+                firstname: firstname,
+                lastname: lastname
+            })
+        }).then(() => {
+            alert("Password reset to \"password\"")
+        })
+    }
+
+    function removeuser(firstname, lastname) {
+        fetch("api/admin/removeuser", {
+            method: "POST",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                })
+            },
+            body: JSON.stringify({
+                firstname: firstname,
+                lastname: lastname
+            })
+        }).then(() => {
+            location.reload()
+        })
+    }
+
     async function main() {
+        //Gets all requests for users managed by the current logged in user
         const requests = await (await fetch("/api/admin/getrequests", {
             method: "POST",
             headers: {
@@ -113,6 +156,7 @@
             }
         })).json()
 
+        //For each request, adds an entry to the requests div
         for (req of requests) {
             const div = document.createElement("div")
             div.classList.add("requestdiv")
@@ -124,6 +168,7 @@
             `
         }
 
+        //Gets all users managed by the current logged in user
         const managedRes = await fetch("/api/admin/getmanaged", {
             method: "POST",
             headers: {
@@ -135,6 +180,8 @@
             }
         })
         const managed = await managedRes.json()
+
+        //For all employees, adds an entry to the users div
         for (employee of managed) {
             const div = document.createElement("div")
             div.classList.add("employeeDiv")
@@ -143,7 +190,9 @@
             div.appendChild(name)
             const btnsdiv = document.createElement("div")
             btnsdiv.innerHTML = `
-                <button onclick="viewstats('${employee[0]}', '${employee[1]}')">View Stats</button>
+                <button class="employeebtns" onclick="viewstats('${employee[0]}', '${employee[1]}')">View Stats</button>
+                <button class="employeebtns" onclick="resetpass('${employee[0]}', '${employee[1]}')">Reset Password</button>
+                <button class="employeebtns" onclick="removeuser('${employee[0]}', '${employee[1]}')">Remove User</button>
             `
             btnsdiv.classList.add("btnsdiv")
             div.appendChild(btnsdiv)

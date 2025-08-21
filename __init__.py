@@ -102,6 +102,7 @@ def api_getClockStatus():
         status = db.getClockStatus(authHeader)
         return json.dumps({"status": status})
 
+#Sends a json list of all accepted requests which are in the current week
 @app.route("/api/gettimetable", method="GET")
 def api_gettimetable():
     authHeader = json.loads(request.get_header("authorization"))
@@ -109,6 +110,15 @@ def api_gettimetable():
         events = db.getWeekEvents(authHeader)
         response.content_type = 'application/json'
         return json.dumps(events)
+
+#Hashes then updates password in the database
+@app.route("/api/changepassword", method="POST")
+def api_changepassword():
+    authHeader = json.loads(request.get_header("authorization"))
+    if db.userLoginStatusHeader(authHeader) in [1,2]:
+        newpass = json.loads(request.body.read())["newpassword"]
+        hashedpass = sha256.hash(newpass)
+        db.updatePassword(authHeader, hashedpass)
 
 #Admin Apis
 
@@ -173,5 +183,13 @@ def api_deleterequest():
         return
     
     db.deleterequest(json.loads(request.body.read())["requestid"])
+
+@app.route("/api/admin/resetpassword", method="POST")
+def api_resetpassword():
+    if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
+        response.status = 401
+        return
+    body = json.loads(request.body.read())
+    db.resetPassword(body["firstname"], body["lastname"])
 
 run(app, host="localhost", port=3000)

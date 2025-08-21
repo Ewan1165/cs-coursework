@@ -64,6 +64,7 @@
     const lastNameInput = document.getElementById("lastName")
     const passwordInput = document.getElementById("password")
     const btn = document.getElementById("loginButton")
+    //When the login button is clicked, get the data from the inputs, and send a request to the server to login, and save the data and logincookie to localstorage
     btn.onclick = () => {
         const firstName = firstNameInput.value
         const lastName = lastNameInput.value

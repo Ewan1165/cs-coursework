@@ -19,7 +19,7 @@
     </div>
     <div id="midcontainer">
         <div class="pushright">
-            <button id="passbtn">Change Password</button>
+            <button onclick="changepassword()" id="passbtn">Change Password</button>
             <button id="logoutbtn" onclick="logout()">Log Out</button>
         </div>
     </div>
@@ -67,6 +67,7 @@
     const clockinbtn = document.getElementById("clockinbtn")
     const clockoutbtn = document.getElementById("clockoutbtn")
 
+    //Sends a request to the server to see if the user is clocked in or out and colour the buttons accordingly
     fetch("/api/getclockstatus", {
         headers: {
             authorization: JSON.stringify({
@@ -85,6 +86,7 @@
         }
     })
 
+    //Creates a canvas for the timetable
     const canvas = document.getElementById("timetablecanvas")
     const ctx = canvas.getContext("2d")
 
@@ -93,16 +95,20 @@
     const weekbeginning = now.getDate() + " " + now.toLocaleString('en-GB', { month: 'long' })
     const weekbeginningtime = now.getTime() + 3600000
 
+    //Adds week beginning text
     ctx.strokeRect(150,150,700,700)
     ctx.font = "50px Arial"
     ctx.textAlign = "center"
     ctx.fillText(`Week beginning ${weekbeginning}`,500,80)
 
+    //Draw lines to separate days
     for (let i = 250; i < 850; i += 100) {
         ctx.moveTo(i, 150)
         ctx.lineTo(i, 850)
         ctx.stroke()
     }
+
+    //Add times down the left side
     ctx.font = "20px Arial"
     ctx.textAlign = "right"
     ctx.textBaseline = "middle"
@@ -110,6 +116,7 @@
         ctx.fillText(`${i}:00`, 130, 150+(i*(700/24)))
     }
 
+    //Gets the users timetable for the week, then creates rectangles in the canvas to represent them
     fetch("/api/gettimetable", {
         method: "GET",
         headers: {
@@ -134,6 +141,7 @@
         }
     })
 
+    //Sends a request to the server to delete the users login cookie then goes back to the login page
     function logout() {
         fetch("/api/logout", {
             method: "POST",
@@ -152,6 +160,7 @@
         })
     }
 
+    //Gets the data from inputs and sends the request to the server where it is inserted into the database
     function submit() {
         if (leave.checked == overtime.checked) {
             window.alert("Select a type of request!")
@@ -180,6 +189,7 @@
         })
     }
 
+    //Sends a request to the server to create an entry in the clock in table with the current status, and changes the colour of the buttons accordingly
     function clockstatus(status) {
         fetch("/api/setclockstatus", {
             method: "POST",
@@ -199,6 +209,23 @@
                 clockinbtn.style.backgroundColor = "red"
                 clockoutbtn.style.backgroundColor = "green"
             }
+        })
+    }
+
+    function changepassword() {
+        let pass = window.prompt("Change password:")
+        fetch("/api/changepassword", {
+            method: "POST",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                })
+            },
+            body: JSON.stringify({
+                newpassword: pass
+            })
         })
     }
 </script>
