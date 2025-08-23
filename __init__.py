@@ -120,6 +120,23 @@ def api_changepassword():
         hashedpass = sha256.hash(newpass)
         db.updatePassword(authHeader, hashedpass)
 
+#Returns the 5 most recent unread and 5 most recent read notifications
+@app.route("/api/getnotifications", method="GET")
+def api_getnotifications():
+    authHeader = json.loads(request.get_header("authorization"))
+    if db.userLoginStatusHeader(authHeader) in [1,2]:
+        unread = db.getUnreadNotifications(authHeader)
+        read = db.getReadNotifications(authHeader)
+        return json.dumps(unread + read)
+
+#Sets the notification specified by the user as read
+@app.route("/api/readnotification", method="POST")
+def api_readnotification():
+    authHeader = json.loads(request.get_header("authorization"))
+    if db.userLoginStatusHeader(authHeader) in [1,2]:
+        body = json.loads(request.body.read())
+        db.setNotifRead(body["notifid"])
+
 #Admin Apis
 
 #Gets all first and last names of the users who are managed by the manager who sent the web request

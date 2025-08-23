@@ -46,6 +46,9 @@ div {
     margin-right: 2vw;
     height: 2vh;
 }
+#requestsheader {
+    margin-left: 1vw;
+}
 .employeeDiv {
     width: 95vw;
     height: 3vh;

@@ -9,9 +9,14 @@
 
 <body>
     <div id="topcontainer">
-        <button class="blank-button">
+        <button onclick="opennotifications()" class="blank-button">
             <img class="top-img" src="/resources/notification-bell.svg" alt="Notification">
         </button>
+        <dialog id="notificationdialog">
+            <h1>Notifications:</h1>
+            <div id="notifdiv"></div>
+            <button onclick="closenotifications()">Close</button>
+        </dialog>
         <button class="blank-button">
             <img class="top-img" src="/resources/messages-icon.svg" alt="Notification">
         </button>
@@ -28,9 +33,9 @@
             <div id="requestscontainer">
                 <div id="requesttypecontainer">
                     <input id="overtime" type="radio" name="requesttype">
-                    <label for="overtime">Overtime</label>
+                    <label id="overtimelabel" for="overtime">Overtime</label>
                     <input id="leave" type="radio" name="requesttype">
-                    <label for="leave">Leave</label>
+                    <label id="leavelabel" for="leave">Leave</label>
                 </div>
                 <div id="requesttimecontainer">
                     <label for="requestdate">Date</label>
@@ -38,8 +43,10 @@
                     <label for="requesttime">Time</label>
                     <input type="time" name="requesttime" id="requesttime">
                 </div>
-                <label for="requestlength">Length</label>
-                <input type="time" name="requestlength" id="requestlength">
+                <div id="requestlengthcontainer">
+                    <label for="requestlength">Length</label>
+                    <input type="time" name="requestlength" id="requestlength">
+                </div>
                 <button id="submitbtn" onclick="submit()">Submit</button>
             </div>
             <div id="clockincontainer">
@@ -67,6 +74,9 @@
     const clockinbtn = document.getElementById("clockinbtn")
     const clockoutbtn = document.getElementById("clockoutbtn")
 
+    const notificationdialog = document.getElementById("notificationdialog")
+    const notifdiv = document.getElementById("notifdiv")
+
     //Sends a request to the server to see if the user is clocked in or out and colour the buttons accordingly
     fetch("/api/getclockstatus", {
         headers: {
@@ -93,7 +103,9 @@
     const now = new Date()
     now.setDate(now.getDate() - ((now.getDay()+6) % 7))
     const weekbeginning = now.getDate() + " " + now.toLocaleString('en-GB', { month: 'long' })
-    const weekbeginningtime = now.getTime() + 3600000 - (new Date().getTimezoneOffset()*60000)
+    const weekbeginningtime = new Date(new Date().setDate(new Date().getDate() - ((new Date().getDay() + 6) % 7))).setHours(0,0,0,0) - (new Date().getTimezoneOffset()*60000)
+
+    console.log(weekbeginningtime)
 
     //Adds week beginning text
     ctx.strokeRect(150,150,700,700)
@@ -129,10 +141,10 @@
     }).then(res => res.json()).then(json => {
         console.log(json)
         for (event of json) {
+            //For each block to be placed calculate its position on the canvas
             const startoffsetms = event[1] - weekbeginningtime
             const day = Math.ceil(startoffsetms / 86400000)
             const through = (startoffsetms % 86400000) / 86400000
-            console.log(`Day: ${day}    Through: ${through}    Startoffsetms: ${startoffsetms}`)
             if (event[0] == 0) {
                 ctx.fillStyle = "blue"
             } else if (event[0] == 1) {
@@ -141,6 +153,61 @@
             ctx.fillRect(150 + (day * 100), 150 + (through * 700), 100, event[2]*0.00000810185)
         }
     })
+
+    async function opennotifications() {
+        //Get all notifications from the server
+        const res = await fetch("/api/getnotifications", {
+            method: "GET",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                }
+            )}
+        })
+        //Set the contents of the notification dialog to include all notifications sent by the server, with a circle next to unread ones
+        notifdiv.innerHTML = ""
+        const notifs = await res.json()
+        for (notif of notifs) {
+            const div = document.createElement("div")
+            let unreadcircle
+            if (notif[2] == 0) {
+                unreadcircle = document.createElement("h1")
+                unreadcircle.id = String(notif[3]) + "_unreadcircleref"
+                unreadcircle.innerHTML = "&#9673&nbsp"
+                div.appendChild(unreadcircle)
+                div.addEventListener("mouseenter", function() {
+                    //If the user mouses over an unread notification then delete the circle and send a request to the server to mark it as read
+                    const circle = document.getElementById(String(notif[3]) + "_unreadcircleref")
+                    if (circle) {
+                        circle.remove()
+                        fetch("/api/readnotification", {
+                            method: "POST",
+                            headers: {
+                                authorization: JSON.stringify({
+                                    FirstName: window.localStorage.getItem("firstname"),
+                                    LastName: window.localStorage.getItem("lastname"),
+                                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                                }
+                            )},
+                            body: JSON.stringify({notifid: notif[3]})
+                        })
+                    }
+                })
+            }
+            div.innerHTML += `
+                <h1>${notif[0]}&nbsp&nbsp</h1>
+                <h1>${notif[1]}</h1>
+            `
+            notifdiv.appendChild(div)
+        }
+        notificationdialog.showModal()
+    }
+
+    function closenotifications() {
+        notificationdialog.close()
+    }
 
     //Sends a request to the server to delete the users login cookie then goes back to the login page
     function logout() {
@@ -215,6 +282,7 @@
 
     function changepassword() {
         let pass = window.prompt("Change password:")
+        if (pass == "" || pass == null) return
         fetch("/api/changepassword", {
             method: "POST",
             headers: {

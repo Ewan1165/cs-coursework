@@ -129,3 +129,12 @@ class Database:
     def removeUser(this, firstname, lastname):
         this.query("PRAGMA foreign_keys = ON;")
         this.query("DELETE FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))
+
+    def getUnreadNotifications(this, header):
+        return this.fetch("SELECT Title, Body, Read, NotificationID FROM TblNotification, TblUsers WHERE TblNotification.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Read = false ORDER BY NotificationID DESC;", (header["FirstName"], header["LastName"]))
+
+    def getReadNotifications(this, header):
+        return this.fetch("SELECT Title, Body, Read, NotificationID FROM TblNotification, TblUsers WHERE TblNotification.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Read = true ORDER BY NotificationID LIMIT 5;", (header["FirstName"], header["LastName"]))
+    
+    def setNotifRead(this, notifid):
+        this.query("UPDATE TblNotification SET Read = true WHERE NotificationID = ?;", (notifid, ))
