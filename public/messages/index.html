@@ -10,12 +10,21 @@
     <div id="topbar"></div>
     <div id="container">
         <div id="people"></div>
-        <div id="messages"></div>
+        <div id="rightcontainer">
+            <div id="messages"></div>
+            <div id="inputcontainer">
+                <input type="text" name="msginput" id="msginput">
+                <button id="sendbtn">Send</button>
+            </div>
+        </div>
     </div>
 </body>
 
 <script>
     const peoplecontainer = document.getElementById("people")
+    const msgcontainer = document.getElementById("messages")
+
+    const msginput = document.getElementById("msginput")
 
     fetch("/api/getmessagepeople", {
         method: "GET",
@@ -42,7 +51,10 @@
         })
     })
 
+    let currentPerson = null
+
     function setMessagePerson(firstname, lastname) {
+        currentPerson = [firstname, lastname]
         fetch("/api/getmessages", {
             method: "POST",
             headers: {
@@ -57,7 +69,44 @@
                 lastname: lastname
             })
         }).then(res => res.json()).then(msgs => {
-            console.log(msgs)
+            msgcontainer.innerHTML = ""
+            msgs.forEach(msg => {
+                const div = document.createElement("div")
+                div.innerHTML = `
+                    <h1 class="${msg[2] == 1 ? "mymsg" : "theirmsg"}">${msg[0]}</h1>
+                `
+                msgcontainer.appendChild(div)
+                msgcontainer.scrollTop = msgcontainer.scrollHeight
+            })
+        })
+    }
+
+    document.getElementById("sendbtn").onclick = function() {
+        if (currentPerson == null) return
+        if (msginput.value == "") return
+        const msg = msginput.value
+        fetch("/api/sendmessage", {
+            method: "POST",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                }
+            )},
+            body: JSON.stringify({
+                firstname: currentPerson[0],
+                lastname: currentPerson[1],
+                msg: msg
+            })
+        }).then(res => {
+            const div = document.createElement("div")
+            div.innerHTML = `
+                <h1 class="mymsg">${msg}</h1>
+            `
+            msgcontainer.appendChild(div)
+            msgcontainer.scrollTop = msgcontainer.scrollHeight
+            msginput.value = ""
         })
     }
 </script>

@@ -144,12 +144,20 @@ def api_getmessagepeople():
     if db.userLoginStatusHeader(authHeader) in [1,2]:
         return json.dumps(db.getMessagePeople(authHeader))
 
+#Returns all messages between the 2 users
 @app.route("/api/getmessages", method="POST")
 def api_getmessages():
     authHeader = json.loads(request.get_header("authorization"))
     if db.userLoginStatusHeader(authHeader) in [1,2]:
         body = json.loads(request.body.read())
         return json.dumps(db.getMessages(authHeader, body["firstname"], body["lastname"]))
+
+@app.route("/api/sendmessage", method="POST")
+def api_sendmessage():
+    authHeader = json.loads(request.get_header("authorization"))
+    if db.userLoginStatusHeader(authHeader) in [1,2]:
+        body = json.loads(request.body.read())
+        db.sendMessage(authHeader, body["firstname"], body["lastname"], body["msg"])
 
 #Admin Apis
 

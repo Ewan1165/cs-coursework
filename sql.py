@@ -164,3 +164,9 @@ class Database:
         return this.fetch("""SELECT Body, Timestamp, CASE WHEN SenderID = ? THEN 1 ELSE 0 END AS Direction
                           From TblMessages WHERE
                           (SenderID = ? AND ReceiverID = ?) OR (SenderID = ? AND ReceiverID = ?) ORDER BY Timestamp ASC;""", (id1, id1, id2, id2, id1))
+    
+    def sendMessage(this, header, firstname, lastname, msg):
+        senderID = this.getUserIdFromHeader(header)
+        reveiverID = this.getUserId(firstname, lastname)
+        timestamp = int(time())
+        this.query("INSERT INTO TblMessages (SenderID, ReceiverID, Body, Timestamp) VALUES (?, ?, ?, ?);", (senderID, reveiverID, msg, timestamp))

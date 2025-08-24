@@ -21,9 +21,14 @@ div {
     width: 100vw;
     height: 91vh;
 }
+#rightcontainer {
+    width: 75vw;
+    height: 91vh;
+    flex-direction: column;
+}
 #people {
     width: 25vw;
-    height: 100vh;
+    height: 91vh;
     border-right: solid;
     overflow-x: hidden;
     overflow-y: scroll;
@@ -31,9 +36,24 @@ div {
 }
 #messages {
     width: 75vw;
-    height: 100vh;
+    height: 86vh;
     overflow-x: hidden;
-    overflow-y: scroll
+    overflow-y: scroll;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+#inputcontainer {
+    width: 75vw;
+    height: 5vh;
+}
+#msginput {
+    height: 5vh;
+    width: 60vw;
+    font-size: x-large;
+}
+#sendbtn {
+    height: 5vh;
+    width: 15vw;
 }
 .persondiv {
     margin-left: 0.5vw;
@@ -41,4 +61,12 @@ div {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+.mymsg {
+    margin-right: 2vw;
+    margin-left: auto;
+}
+.theirmsg {
+    margin-left: 2vw;
+    margin-right: auto;
 }
