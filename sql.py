@@ -50,8 +50,11 @@ class Database:
         else:
             return 1
         
+    def getUserId(this, firstname, lastname):
+        return this.fetchOne("SELECT UserID FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))[0]
+
     def getUserIdFromHeader(this, header):
-        return this.fetchOne("SELECT UserID FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (header["FirstName"], header["LastName"]))[0]
+        return this.getUserId(header["FirstName"], header["LastName"])
 
     def userLoginStatusHeader(this, header):
         return this.userLoginStatus(header["FirstName"], header["LastName"], header["LoginCookie"])
@@ -87,7 +90,9 @@ class Database:
 
     def getRequestsByHeader(this, header):
         adminId = this.fetchOne("SELECT UserID FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (header["FirstName"], header["LastName"]))[0]
-        return this.fetch("SELECT RequestType, StartTime, Length, FirstName, LastName, RequestID FROM TblUsers, TblRequests WHERE TblUsers.UserID = TblRequests.UserID AND Manager = ? AND Accepted = false;", (adminId, ))
+        return this.fetch("""SELECT RequestType, StartTime, Length, FirstName, LastName, RequestID
+                          FROM TblUsers, TblRequests
+                          WHERE TblUsers.UserID = TblRequests.UserID AND Manager = ? AND Accepted = false;""", (adminId, ))
     
     def acceptRequest(this, id):
         this.query("UPDATE TblRequests SET Accepted = 1 WHERE RequestID = ?;", (id, ))
@@ -102,7 +107,8 @@ class Database:
 
     def getClockStatus(this, header):
         try:
-            return this.fetchOne("SELECT InOrOut FROM TblClockIn, TblUsers WHERE TblUsers.UserID = TblClockIn.UserID AND FirstName = ? AND LastName = ? ORDER BY Time DESC;", (header["FirstName"], header["LastName"]))[0]
+            return this.fetchOne("""SELECT InOrOut FROM TblClockIn, TblUsers WHERE
+                                 TblUsers.UserID = TblClockIn.UserID AND FirstName = ? AND LastName = ? ORDER BY Time DESC;""", (header["FirstName"], header["LastName"]))[0]
         except:
             userID = this.getUserIdFromHeader(header)
             this.query("INSERT INTO TblClockIn (UserID, Time, InOrOut) VALUES (?, ?, 0);", (userID, time()))
@@ -131,10 +137,30 @@ class Database:
         this.query("DELETE FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))
 
     def getUnreadNotifications(this, header):
-        return this.fetch("SELECT Title, Body, Read, NotificationID FROM TblNotification, TblUsers WHERE TblNotification.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Read = false ORDER BY NotificationID DESC;", (header["FirstName"], header["LastName"]))
+        return this.fetch("""SELECT Title, Body, Read, NotificationID FROM TblNotification, TblUsers
+                          WHERE TblNotification.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Read = false
+                          ORDER BY NotificationID DESC;""", (header["FirstName"], header["LastName"]))
 
     def getReadNotifications(this, header):
-        return this.fetch("SELECT Title, Body, Read, NotificationID FROM TblNotification, TblUsers WHERE TblNotification.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Read = true ORDER BY NotificationID LIMIT 5;", (header["FirstName"], header["LastName"]))
+        return this.fetch("""SELECT Title, Body, Read, NotificationID FROM TblNotification, TblUsers
+                          WHERE TblNotification.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Read = true
+                          ORDER BY NotificationID DESC LIMIT 5;""", (header["FirstName"], header["LastName"]))
     
     def setNotifRead(this, notifid):
         this.query("UPDATE TblNotification SET Read = true WHERE NotificationID = ?;", (notifid, ))
+
+    def getMessagePeople(this, header):
+        userid =  this.getUserIdFromHeader(header)
+        return this.fetch("""
+            SELECT DISTINCT FirstName, LastName FROM (
+            SELECT FirstName, LastName, Timestamp FROM TblMessages, TblUsers WHERE TblMessages.SenderID = TblUsers.UserID AND TblMessages.ReceiverID = ?
+            UNION SELECT FirstName, LastName, Timestamp FROM TblMessages, TblUsers WHERE TblMessages.ReceiverID = TblUsers.UserID AND TblMessages.SenderID = ?
+            ) ORDER BY Timestamp DESC;
+        """, (userid, userid))
+    
+    def getMessages(this, header, firstname, lastname):
+        id1 = this.getUserIdFromHeader(header)
+        id2 = this.getUserId(firstname, lastname)
+        return this.fetch("""SELECT Body, Timestamp, CASE WHEN SenderID = ? THEN 1 ELSE 0 END AS Direction
+                          From TblMessages WHERE
+                          (SenderID = ? AND ReceiverID = ?) OR (SenderID = ? AND ReceiverID = ?) ORDER BY Timestamp ASC;""", (id1, id1, id2, id2, id1))

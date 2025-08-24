@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages</title>
+    <link rel="stylesheet" href="/messages/styles.css">
+</head>
+<body>
+    <div id="topbar"></div>
+    <div id="container">
+        <div id="people"></div>
+        <div id="messages"></div>
+    </div>
+</body>
+
+<script>
+    const peoplecontainer = document.getElementById("people")
+
+    fetch("/api/getmessagepeople", {
+        method: "GET",
+        headers: {
+            authorization: JSON.stringify({
+                FirstName: window.localStorage.getItem("firstname"),
+                LastName: window.localStorage.getItem("lastname"),
+                LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+            }
+        )},
+    }).then(res => res.json()).then(people => {
+        people.forEach(i => {
+            const div = document.createElement("div")
+            div.classList.add("persondiv")
+            div.innerHTML = `
+                <h1>${i[0]} ${i[1]}</h1>
+            `
+            div.firstname = i[0]
+            div.lastname = i[1]
+            peoplecontainer.appendChild(div)    
+            div.addEventListener("click", () => {
+                setMessagePerson(i[0], i[1])
+            })
+        })
+    })
+
+    function setMessagePerson(firstname, lastname) {
+        fetch("/api/getmessages", {
+            method: "POST",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                }
+            )},
+            body: JSON.stringify({
+                firstname: firstname,
+                lastname: lastname
+            })
+        }).then(res => res.json()).then(msgs => {
+            console.log(msgs)
+        })
+    }
+</script>
+
+</html>

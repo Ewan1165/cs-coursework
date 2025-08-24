@@ -137,6 +137,20 @@ def api_readnotification():
         body = json.loads(request.body.read())
         db.setNotifRead(body["notifid"])
 
+#Gets all people who the user has messaged or recieved messages from
+@app.route("/api/getmessagepeople", method="GET")
+def api_getmessagepeople():
+    authHeader = json.loads(request.get_header("authorization"))
+    if db.userLoginStatusHeader(authHeader) in [1,2]:
+        return json.dumps(db.getMessagePeople(authHeader))
+
+@app.route("/api/getmessages", method="POST")
+def api_getmessages():
+    authHeader = json.loads(request.get_header("authorization"))
+    if db.userLoginStatusHeader(authHeader) in [1,2]:
+        body = json.loads(request.body.read())
+        return json.dumps(db.getMessages(authHeader, body["firstname"], body["lastname"]))
+
 #Admin Apis
 
 #Gets all first and last names of the users who are managed by the manager who sent the web request
