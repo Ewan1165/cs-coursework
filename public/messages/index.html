@@ -7,7 +7,12 @@
     <link rel="stylesheet" href="/messages/styles.css">
 </head>
 <body>
-    <div id="topbar"></div>
+    <div id="topbar">
+        <button onclick="back()" id="backbutton">
+            <img id="backimg" class="top-img" src="/resources/back-button.svg" alt="Back To Homepage">
+        </button>
+        <h1 id="username"></h1>
+    </div>
     <div id="container">
         <div id="people"></div>
         <div id="rightcontainer">
@@ -25,6 +30,12 @@
     const msgcontainer = document.getElementById("messages")
 
     const msginput = document.getElementById("msginput")
+
+    document.getElementById("username").innerHTML = window.localStorage.getItem("firstname") + " " + window.localStorage.getItem("lastname")
+
+    function back() {
+        window.location.replace("/")
+    }
 
     fetch("/api/getmessagepeople", {
         method: "GET",
@@ -52,6 +63,11 @@
     })
 
     let currentPerson = null
+
+    setInterval(() => {
+        if (!currentPerson) return
+        setMessagePerson(currentPerson[0], currentPerson[1])
+    }, 1000)
 
     function setMessagePerson(firstname, lastname) {
         currentPerson = [firstname, lastname]

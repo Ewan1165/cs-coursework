@@ -55,6 +55,18 @@ div {
     height: 5vh;
     width: 15vw;
 }
+#username {
+    margin-right: 1vw;
+    margin-left: auto;
+}
+#backbutton {
+    border: none;
+    background: none;
+}
+#backimg {
+    height: 9vh;
+    width: auto;
+}
 .persondiv {
     margin-left: 0.5vw;
     -webkit-user-select: none;
