@@ -104,11 +104,6 @@
         })
     }
 
-    function viewstats(firstname, lastname) {
-        //todooooo
-        console.log(`${firstname} ${lastname}`)
-    }
-
     //Reset the users password to "password"
     function resetpass(firstname, lastname) {
         fetch("/api/admin/resetpassword", {
@@ -251,7 +246,7 @@
             div.appendChild(name)
             const btnsdiv = document.createElement("div")
             btnsdiv.innerHTML = `
-                <button class="employeebtns" onclick="viewstats('${employee[0]}', '${employee[1]}')">View Stats</button>
+                <a class="employeebtns" href="/admin/employeestats?first=${employee[0]}&last=${employee[1]}" target="_blank">View Stats</a>
                 <button class="employeebtns" onclick="resetpass('${employee[0]}', '${employee[1]}')">Reset Password</button>
                 <button class="employeebtns" onclick="removeuser('${employee[0]}', '${employee[1]}')">Remove User</button>
             `

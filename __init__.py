@@ -2,6 +2,8 @@ from bottle import Bottle, run, static_file, HTTPError, request, response
 import os, json, random
 import sha256
 from sql import Database
+from time import time
+from datetime import datetime, timedelta
 
 app = Bottle()
 db = Database("db.db")
@@ -39,6 +41,34 @@ def serveLandingPage():
 
 #Employee Apis
 
+def checkLoggedIn(function):
+    def wrapper():
+        authHeader = json.loads(request.get_header("authorization"))
+        if db.userLoginStatusHeader(authHeader) in [1,2]:
+            rawBody = request.body.read()
+            if rawBody:
+                body = json.loads(rawBody)
+            else:
+                body = None
+            return function(authHeader, body)
+        else:
+            response.status = 232
+    return wrapper
+        
+def checkLoggedInAdmin(function):
+    def wrapper():
+        authHeader = json.loads(request.get_header("authorization"))
+        if db.userLoginStatusHeader(authHeader) == 2:
+            rawBody = request.body.read()
+            if rawBody:
+                body = json.loads(rawBody)
+            else:
+                body = None
+            return function(authHeader, body)
+        else:
+            response.status = 401
+    return wrapper
+
 #Test Login status code 230: logged in and is an employee, 231: logged in and is a manager, 232: not logged in
 @app.route("/api/testLogin", method="POST")
 def api_testLogin():
@@ -71,173 +101,190 @@ def api_Login():
 
 #Logs user out by deleting their cookie
 @app.route("/api/logout", method="POST")
-def api_Logout():
-    authHeader = json.loads(request.get_header("authorization"))
-    loginStatus = db.userLoginStatusHeader(authHeader)
-    if loginStatus in [1, 2]:
-        db.deleteCookie(authHeader["FirstName"], authHeader["LastName"])
+@checkLoggedIn
+def api_Logout(authHeader, body):
+    db.query("UPDATE tblUsers SET LoginCookie = NULL WHERE FirstName = ? AND LastName = ?;", (authHeader["firstname"], authHeader["lastname"]))
 
 #Insers a request into the database
 @app.route("/api/createrequest", method="POST")
-def api_createrequest():
-    authHeader = json.loads(request.get_header("authorization"))
-    loginStatus = db.userLoginStatusHeader(authHeader)
-    if loginStatus in [1, 2]:
-        body = json.loads(request.body.read())
-        db.createRequestFromHeader(authHeader, body["requesttype"], body["timestamp"], body["length"])
+@checkLoggedIn
+def api_createrequest(authHeader, body):
+    userId = db.getUserIdFromHeader(authHeader)
+    db.query("INSERT INTO TblRequests (UserID, Accepted, RequestType, StartTime, Length) VALUES (?, false, ?, ?, ?);", (userId, body["requesttype"], body["timestamp"], body["length"]))
 
 #Create an entry into TblClockIn with InOrOut attribute of body.status
 @app.route("/api/setclockstatus", method="POST")
-def api_setclockstatus():
-    authHeader = json.loads(request.get_header("authorization"))
-    if db.userLoginStatusHeader(authHeader) in [1,2]:
-        status = json.loads(request.body.read())["status"]
-        db.setClockStatus(authHeader, status)
+@checkLoggedIn
+def api_setclockstatus(authHeader, body):
+    userId = db.getUserIdFromHeader(authHeader)
+    currTime = int(time())
+    db.query("INSERT INTO TblClockIn (UserID, Time, InOrOut) VALUES (?, ?, ?);", (userId, currTime, body["status"]))
 
 #Returns InOrOut property of last entry in TblClockIn created by currently logged in user
 @app.route("/api/getclockstatus", method="GET")
-def api_getClockStatus():
-    authHeader = json.loads(request.get_header("authorization"))
-    if db.userLoginStatusHeader(authHeader) in [1,2]:
-        status = db.getClockStatus(authHeader)
-        return json.dumps({"status": status})
+@checkLoggedIn
+def api_getClockStatus(authHeader, body):
+    try:
+        status = db.fetchOne("""SELECT InOrOut FROM TblClockIn, TblUsers WHERE
+            TblUsers.UserID = TblClockIn.UserID AND FirstName = ? AND LastName = ? ORDER BY Time DESC;""", (authHeader["FirstName"], authHeader["LastName"]))[0]
+    except:
+        userID = db.getUserIdFromHeader(authHeader)
+        status = db.query("INSERT INTO TblClockIn (UserID, Time, InOrOut) VALUES (?, ?, 0);", (userID, time()))
+    
+    response.content_type = 'application/json'
+    return json.dumps({"status": status})
 
 #Sends a json list of all accepted requests which are in the current week
 @app.route("/api/gettimetable", method="GET")
-def api_gettimetable():
-    authHeader = json.loads(request.get_header("authorization"))
-    if db.userLoginStatusHeader(authHeader) in [1,2]:
-        events = db.getWeekEvents(authHeader)
-        response.content_type = 'application/json'
-        return json.dumps(events)
+@checkLoggedIn
+def api_gettimetable(authHeader, body):
+    now = datetime.now()
+    startofweek = now - timedelta(days=now.weekday())
+    startofweek = startofweek.replace(hour=0, minute=0, second=0, microsecond=0)
+    startofweek = int(startofweek.timestamp()) * 1000
+    endofweek = startofweek + 604800000
+    
+    events = db.fetch("""
+                SELECT RequestType, StartTime, Length FROM TblRequests, TblUsers
+                WHERE TblRequests.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Accepted = true
+                AND StartTime < ? AND StartTime + Length > ?;""", (authHeader["FirstName"], authHeader["LastName"], endofweek, startofweek))
+    
+    response.content_type = 'application/json'
+    return json.dumps(events)
 
 #Hashes then updates password in the database
 @app.route("/api/changepassword", method="POST")
-def api_changepassword():
-    authHeader = json.loads(request.get_header("authorization"))
-    if db.userLoginStatusHeader(authHeader) in [1,2]:
-        newpass = json.loads(request.body.read())["newpassword"]
-        hashedpass = sha256.hash(newpass)
-        db.updatePassword(authHeader, hashedpass)
+@checkLoggedIn
+def api_changepassword(authHeader, body):
+    newpass = body["newpassword"]
+    hashedpass = sha256.hash(newpass)
+    db.query("UPDATE TblUsers SET Password = ? WHERE FirstName = ? AND LastName = ?;", (hashedpass, authHeader["FirstName"], authHeader["LastName"]))
 
 #Returns the 5 most recent unread and 5 most recent read notifications
 @app.route("/api/getnotifications", method="GET")
-def api_getnotifications():
-    authHeader = json.loads(request.get_header("authorization"))
-    if db.userLoginStatusHeader(authHeader) in [1,2]:
-        unread = db.getUnreadNotifications(authHeader)
-        read = db.getReadNotifications(authHeader)
-        return json.dumps(unread + read)
+@checkLoggedIn
+def api_getnotifications(authHeader, body):
+    unread = db.fetch("""SELECT Title, Body, Read, NotificationID FROM TblNotification, TblUsers
+                        WHERE TblNotification.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Read = false
+                        ORDER BY NotificationID DESC;""", (authHeader["FirstName"], authHeader["LastName"]))
+
+    read = db.fetch("""SELECT Title, Body, Read, NotificationID FROM TblNotification, TblUsers
+                        WHERE TblNotification.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Read = true
+                        ORDER BY NotificationID DESC LIMIT 5;""", (authHeader["FirstName"], authHeader["LastName"]))
+    
+    return json.dumps(unread + read)
 
 #Sets the notification specified by the user as read
 @app.route("/api/readnotification", method="POST")
-def api_readnotification():
-    authHeader = json.loads(request.get_header("authorization"))
-    if db.userLoginStatusHeader(authHeader) in [1,2]:
-        body = json.loads(request.body.read())
-        db.setNotifRead(body["notifid"])
+@checkLoggedIn
+def api_readnotification(authHeader, body):
+    db.query("UPDATE TblNotification SET Read = true WHERE NotificationID = ?;", (body["notifid"], ))
+
 
 #Gets all people who the user has messaged or recieved messages from
 @app.route("/api/getmessagepeople", method="GET")
-def api_getmessagepeople():
-    authHeader = json.loads(request.get_header("authorization"))
-    if db.userLoginStatusHeader(authHeader) in [1,2]:
-        return json.dumps(db.getMessagePeople(authHeader))
+@checkLoggedIn
+def api_getmessagepeople(authHeader, body):
+    userid =  db.getUserIdFromHeader(authHeader)
+    people = db.fetch("""
+        SELECT DISTINCT FirstName, LastName FROM (
+        SELECT FirstName, LastName, Timestamp FROM TblMessages, TblUsers WHERE TblMessages.SenderID = TblUsers.UserID AND TblMessages.ReceiverID = ?
+        UNION SELECT FirstName, LastName, Timestamp FROM TblMessages, TblUsers WHERE TblMessages.ReceiverID = TblUsers.UserID AND TblMessages.SenderID = ?
+        ) ORDER BY Timestamp DESC;
+    """, (userid, userid))
+    return json.dumps(people)
 
 #Returns all messages between the 2 users
 @app.route("/api/getmessages", method="POST")
-def api_getmessages():
-    authHeader = json.loads(request.get_header("authorization"))
-    if db.userLoginStatusHeader(authHeader) in [1,2]:
-        body = json.loads(request.body.read())
-        return json.dumps(db.getMessages(authHeader, body["firstname"], body["lastname"]))
+@checkLoggedIn
+def api_getmessages(authHeader, body):
+    id1 = db.getUserIdFromHeader(authHeader)
+    id2 = db.getUserId(body["firstname"], body["lastname"])
+    msgs = db.fetch("""SELECT Body, Timestamp, CASE WHEN SenderID = ? THEN 1 ELSE 0 END AS Direction
+                        From TblMessages WHERE
+                        (SenderID = ? AND ReceiverID = ?) OR (SenderID = ? AND ReceiverID = ?) ORDER BY Timestamp ASC;""", (id1, id1, id2, id2, id1))
+    
+    return json.dumps(msgs)
 
 #Create an entry into TblMessages
 @app.route("/api/sendmessage", method="POST")
-def api_sendmessage():
-    authHeader = json.loads(request.get_header("authorization"))
-    if db.userLoginStatusHeader(authHeader) in [1,2]:
-        body = json.loads(request.body.read())
-        db.sendMessage(authHeader, body["firstname"], body["lastname"], body["msg"])
+@checkLoggedIn
+def api_sendmessage(authHeader, body):
+    senderID = db.getUserIdFromHeader(authHeader)
+    reveiverID = db.getUserId(body["firstname"], body["lastname"])
+    timestamp = int(time())
+    db.query("INSERT INTO TblMessages (SenderID, ReceiverID, Body, Timestamp) VALUES (?, ?, ?, ?);", (senderID, reveiverID, body["msg"], timestamp))
 
 #Admin Apis
 
 #Gets all first and last names of the users who are managed by the manager who sent the web request
 @app.route("/api/admin/getmanaged", method="POST")
-def api_getManaged():
-    authHeader = json.loads(request.get_header("authorization"))
-    if db.userLoginStatusHeader(authHeader) != 2:
-        response.status = 401
-        return
+@checkLoggedInAdmin
+def api_getManaged(authHeader, body):
     response.content_type = 'application/json'
-    return json.dumps(db.getManagedBy(authHeader["FirstName"], authHeader["LastName"]))
+    adminId = db.getUserIdFromHeader(authHeader)
+    users = db.fetch("SELECT FirstName, LastName FROM TblUsers WHERE Manager = ?;", (adminId,))
+    return json.dumps(users)
 
 #Gets the first and last names of all managers in the database
 @app.route("/api/admin/getmanagers")
-def api_getManagers():
-    if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
-        response.status = 401
-        return
+@checkLoggedInAdmin
+def api_getManagers(authHeader, body):
     response.content_type = 'application/json'
-    return json.dumps(db.getManagers())
+    managers = db.fetch("SELECT FirstName, LastName FROM TblUsers WHERE Manager = 0;")
+    return json.dumps(managers)
 
 #Create a new employee account with the password "password"
 @app.route("/api/admin/createaccount", method="POST")
-def api_createAccount():
-    if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
-        response.status = 401
-        return
-    bodyData = json.loads(request.body.read())
-    print(bodyData)
-    success = db.createAccount(bodyData["FirstName"], bodyData["LastName"], bodyData["PhoneNum"], bodyData["Manager"])
-    if success == 0:
-        response.status = 240
-    if success == 1:
+@checkLoggedInAdmin
+def api_createAccount(authHeader, body):
+    if (db.fetchOne("SELECT 1 FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (body["FirstName"], body["LastName"])) != None):
         response.status = 241
+        return
+    manager = body["Manager"]
+    managerId = db.getUserId(manager[0], manager[1])
+    db.query("INSERT INTO TblUsers (FirstName, LastName, PhoneNumber, Password, Manager) VALUES (?, ?, ?, ?, ?);", (body["FirstName"], body["LastName"], body["PhoneNum"], "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8", managerId))
+    response.status = 240
 
 #Gets all leave and overtime requests from employees managed by the user who sent the web request
 @app.route("/api/admin/getrequests", method="POST")
-def api_getrequests():
-    authHeader = json.loads(request.get_header("authorization"))
-    if db.userLoginStatusHeader(authHeader) != 2:
-        response.status = 401
-        return
-
+@checkLoggedInAdmin
+def api_getrequests(authHeader, body):
     response.content_type = 'application/json'
-    return json.dumps(db.getRequestsByHeader(authHeader))
+    adminId = db.getUserIdFromHeader(authHeader)
+    requests = db.fetch("""SELECT RequestType, StartTime, Length, FirstName, LastName, RequestID
+                        FROM TblUsers, TblRequests
+                        WHERE TblUsers.UserID = TblRequests.UserID AND Manager = ? AND Accepted = false;""", (adminId, ))
+    return json.dumps(requests)
 
 #Accepts an overtime or leave request by setting the value of its accepted attribute to true
 @app.route("/api/admin/acceptrequest", method="POST")
-def api_acceptrequest():
-    if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
-        response.status = 401
-        return
-    
-    db.acceptRequest(json.loads(request.body.read())["requestid"])
+@checkLoggedInAdmin
+def api_acceptrequest(authHeader, body):
+    db.query("UPDATE TblRequests SET Accepted = 1 WHERE RequestID = ?;", (body["requestid"], ))
 
 #Deletes an overtime or leave request from the database
 @app.route("/api/admin/deleterequest", method="POST")
-def api_deleterequest():
-    if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
-        response.status = 401
-        return
-    
-    db.deleterequest(json.loads(request.body.read())["requestid"])
+@checkLoggedInAdmin
+def api_deleterequest(authHeader, body):
+    db.query("DELETE FROM TblRequests WHERE RequestID = ?;", (body["requestid"], ))
 
+#Resets a users password to "password"
 @app.route("/api/admin/resetpassword", method="POST")
-def api_resetpassword():
-    if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
-        response.status = 401
-        return
-    body = json.loads(request.body.read())
-    db.resetPassword(body["firstname"], body["lastname"])
+@checkLoggedInAdmin
+def api_resetpassword(authHeader, body):
+    db.query("UPDATE TblUsers SET Password = \"5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8\" WHERE FirstName = ? AND LastName = ?;", (body["firstname"], body["lastname"]))
 
+#Deletes a user from the database
 @app.route("/api/admin/removeuser", method="POST")
-def api_removeuser():
-    if db.userLoginStatusHeader(json.loads(request.get_header("authorization"))) != 2:
-        response.status = 401
-        return
-    body = json.loads(request.body.read())
-    db.removeUser(body["firstname"], body["lastname"])
+@checkLoggedInAdmin
+def api_removeuser(authHeader, body):
+    db.query("PRAGMA foreign_keys = ON;")
+    db.query("DELETE FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (body["firstname"], body["lastname"]))
+
+@app.route("/api/admin/getuserdata")
+@checkLoggedInAdmin
+def api_getuserdata(authHeader, body):
+    print(body)
 
 run(app, host="localhost", port=3000)

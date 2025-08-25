@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stats</title>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+</body>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const params = new URLSearchParams(window.location.search)
+    const firstname = params.get("first")
+    const lastname = params.get("last")
+
+    const ctx = document.getElementById("canvas")
+
+    function getLast20Mondays() {
+        const res = []
+        const today = new Date()
+        
+        const dayOfTheWeek = today.getDay()
+        const offset = (dayOfTheWeek == 0) ? -6 : 1 - dayOfTheWeek
+        const mostRecentMonday = new Date(today)
+        mostRecentMonday.setDate(today.getDate() + offset)
+
+        for (let i = 1; i <= 20; i++) {
+            const monday = new Date(mostRecentMonday)
+            monday.setDate(mostRecentMonday.getDate() - (i*7))
+
+            const day = monday.getDate()
+            const month = monday.toLocaleString("default", {month: "short"})
+
+            res.push(`${day} ${month}`)
+        }
+        return res.reverse()
+    }
+
+    fetch("/api/admin/getuserdata", {
+        method: "POST",
+        headers: {
+            authorization: JSON.stringify({
+                FirstName: window.localStorage.getItem("firstname"),
+                LastName: window.localStorage.getItem("lastname"),
+                LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+            })
+        },
+        body: JSON.stringify({
+            firstname: firstname,
+            lastname: lastname
+        })
+    }).then(res => res.json()).then(data => {
+        new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: getLast20Mondays(),
+                datasets: [{
+                    label: "Hours Worked",
+                    data: [5,6],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: "category",
+                        title: {
+                            display: true,
+                            text: "Date"
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: "Hours Worked"
+                        }
+                    }
+                }
+            }
+        })
+    })
+</script>
+
+</html>
