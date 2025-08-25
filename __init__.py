@@ -152,6 +152,7 @@ def api_getmessages():
         body = json.loads(request.body.read())
         return json.dumps(db.getMessages(authHeader, body["firstname"], body["lastname"]))
 
+#Create an entry into TblMessages
 @app.route("/api/sendmessage", method="POST")
 def api_sendmessage():
     authHeader = json.loads(request.get_header("authorization"))
