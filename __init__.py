@@ -282,9 +282,39 @@ def api_removeuser(authHeader, body):
     db.query("PRAGMA foreign_keys = ON;")
     db.query("DELETE FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (body["firstname"], body["lastname"]))
 
-@app.route("/api/admin/getuserdata")
+@app.route("/api/admin/getuserdata", method="POST")
 @checkLoggedInAdmin
 def api_getuserdata(authHeader, body):
-    print(body)
+    now = datetime.now()
+    thismonday = now - timedelta(days=now.weekday())
+    thismonday = thismonday.replace(hour=0, minute=0, second=0, microsecond=0)
+    thismondaytimestamp = int(thismonday.timestamp())
+    data = []
+    for i in range(2, 22):
+        startofweek = thismondaytimestamp - (i * 604800)
+        endofweek = startofweek + 604799
+        allclocks = db.fetch("""SELECT Time, InOrOut FROM TblClockIn, TblUsers
+                             WHERE TblClockIn.UserID = TblUsers.UserID AND FirstName = ?
+                             AND LastName = ? AND Time < ? AND Time > ?;""", (body["firstname"], body["lastname"], endofweek, startofweek))
+        timeSpent = 0
+        lastTimestamp = 0
+        for i in range(len(allclocks)):
+            if allclocks[i][1] == 1 and lastTimestamp == 0:
+                lastTimestamp = allclocks[i][0]
+            elif allclocks[i][1] == 0 and lastTimestamp != 0:
+                timeSpent += allclocks[i][0] - lastTimestamp
+                lastTimestamp = 0
+        hoursSpent = int(timeSpent / 3600)
+        data.append(hoursSpent)
+
+    response.content_type = 'application/json'
+    return json.dumps(data)
+
+"""i = 1744005600
+while i < 1755496800:
+    db.query("INSERT INTO TblClockIn (UserID, InOrOut, Time) VALUES (2, 1, ?);", (i,))
+    db.query("INSERT INTO TblClockIn (UserID, InOrOut, Time) VALUES (2, 0, ?);", (i+(random.randint(1,10)*3600),))
+
+    i += (24*60*60)"""
 
 run(app, host="localhost", port=3000)
