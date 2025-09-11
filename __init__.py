@@ -310,11 +310,4 @@ def api_getuserdata(authHeader, body):
     response.content_type = 'application/json'
     return json.dumps(data)
 
-"""i = 1744005600
-while i < 1755496800:
-    db.query("INSERT INTO TblClockIn (UserID, InOrOut, Time) VALUES (2, 1, ?);", (i,))
-    db.query("INSERT INTO TblClockIn (UserID, InOrOut, Time) VALUES (2, 0, ?);", (i+(random.randint(1,10)*3600),))
-
-    i += (24*60*60)"""
-
 run(app, host="localhost", port=3000)
