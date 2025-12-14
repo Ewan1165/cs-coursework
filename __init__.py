@@ -275,9 +275,7 @@ def api_getuserdata(authHeader, body):
     for i in range(2, 22):
         startofweek = thismondaytimestamp - (i * 604800)
         endofweek = startofweek + 604799
-        allclocks = db.fetch("""SELECT Time, InOrOut FROM TblClockIn, TblUsers
-                             WHERE TblClockIn.UserID = TblUsers.UserID AND FirstName = ?
-                             AND LastName = ? AND Time < ? AND Time > ?;""", (body["firstname"], body["lastname"], endofweek, startofweek))
+        allclocks = db.fetch("""SELECT Time, InOrOut FROM TblClockIn, TblUsers WHERE TblClockIn.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Time < ? AND Time > ?;""", (body["firstname"], body["lastname"], endofweek, startofweek))
         timeSpent = 0
         lastTimestamp = 0
         for i in range(len(allclocks)):
