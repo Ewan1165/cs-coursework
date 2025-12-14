@@ -40,7 +40,7 @@ def serveStatic(filepath):
 def serveLandingPage():
     return static_file("index.html", root="public")
 
-#Employee Apis
+#Decorator to check if the user is logged in and pass in the body and header
 def checkLoggedIn(function):
     def wrapper():
         authHeader = json.loads(request.get_header("authorization"))
@@ -55,6 +55,7 @@ def checkLoggedIn(function):
             response.status = 232
     return wrapper
         
+#Decorator to check if the user is logged in as an admin and pass in the body and header
 def checkLoggedInAdmin(function):
     def wrapper():
         authHeader = json.loads(request.get_header("authorization"))
@@ -127,8 +128,7 @@ def api_setclockstatus(authHeader, body):
 @checkLoggedIn
 def api_getClockStatus(authHeader, body):
     try:
-        status = db.fetchOne("""SELECT InOrOut FROM TblClockIn, TblUsers WHERE
-            TblUsers.UserID = TblClockIn.UserID AND FirstName = ? AND LastName = ? ORDER BY Time DESC;""", (authHeader["FirstName"], authHeader["LastName"]))[0]
+        status = db.fetchOne("""SELECT InOrOut FROM TblClockIn, TblUsers WHERE TblUsers.UserID = TblClockIn.UserID AND FirstName = ? AND LastName = ? ORDER BY Time DESC;""", (authHeader["FirstName"], authHeader["LastName"]))[0]
     except:
         userID = db.getUserIdFromHeader(authHeader)
         status = db.query("INSERT INTO TblClockIn (UserID, Time, InOrOut) VALUES (?, ?, 0);", (userID, time()))
@@ -146,10 +146,7 @@ def api_gettimetable(authHeader, body):
     startofweek = int(startofweek.timestamp()) * 1000
     endofweek = startofweek + 604800000
     
-    events = db.fetch("""
-                SELECT RequestType, StartTime, Length FROM TblRequests, TblUsers
-                WHERE TblRequests.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Accepted = true
-                AND StartTime < ? AND StartTime + Length > ?;""", (authHeader["FirstName"], authHeader["LastName"], endofweek, startofweek))
+    events = db.fetch("""SELECT RequestType, StartTime, Length FROM TblRequests, TblUsers WHERE TblRequests.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Accepted = true AND StartTime < ? AND StartTime + Length > ?;""", (authHeader["FirstName"], authHeader["LastName"], endofweek, startofweek))
     
     response.content_type = 'application/json'
     return json.dumps(events)
@@ -168,11 +165,7 @@ def api_changepassword(authHeader, body):
 def api_getmessagepeople(authHeader, body):
     userid =  db.getUserIdFromHeader(authHeader)
     people = db.fetch("""
-        SELECT DISTINCT FirstName, LastName FROM (
-        SELECT FirstName, LastName, Timestamp FROM TblMessages, TblUsers WHERE TblMessages.SenderID = TblUsers.UserID AND TblMessages.ReceiverID = ?
-        UNION SELECT FirstName, LastName, Timestamp FROM TblMessages, TblUsers WHERE TblMessages.ReceiverID = TblUsers.UserID AND TblMessages.SenderID = ?
-        ) ORDER BY Timestamp DESC;
-    """, (userid, userid))
+        SELECT DISTINCT FirstName, LastName FROM (SELECT FirstName, LastName, Timestamp FROM TblMessages, TblUsers WHERE TblMessages.SenderID = TblUsers.UserID AND TblMessages.ReceiverID = ? UNION SELECT FirstName, LastName, Timestamp FROM TblMessages, TblUsers WHERE TblMessages.ReceiverID = TblUsers.UserID AND TblMessages.SenderID = ?) ORDER BY Timestamp DESC;""", (userid, userid))
     return json.dumps(people)
 
 #Returns a list of all people
@@ -188,9 +181,7 @@ def api_getnewmessagepeople(authHeader, body):
 def api_getmessages(authHeader, body):
     id1 = db.getUserIdFromHeader(authHeader)
     id2 = db.getUserId(body["firstname"], body["lastname"])
-    msgs = db.fetch("""SELECT Body, Timestamp, CASE WHEN SenderID = ? THEN 1 ELSE 0 END AS Direction
-                        From TblMessages WHERE
-                        (SenderID = ? AND ReceiverID = ?) OR (SenderID = ? AND ReceiverID = ?) ORDER BY Timestamp ASC;""", (id1, id1, id2, id2, id1))
+    msgs = db.fetch("""SELECT Body, Timestamp, CASE WHEN SenderID = ? THEN 1 ELSE 0 END AS Direction From TblMessages WHERE (SenderID = ? AND ReceiverID = ?) OR (SenderID = ? AND ReceiverID = ?) ORDER BY Timestamp ASC;""", (id1, id1, id2, id2, id1))
     
     return json.dumps(msgs)
 
@@ -244,9 +235,7 @@ def api_createAccount(authHeader, body):
 def api_getrequests(authHeader, body):
     response.content_type = 'application/json'
     adminId = db.getUserIdFromHeader(authHeader)
-    requests = db.fetch("""SELECT RequestType, StartTime, Length, FirstName, LastName, RequestID
-                        FROM TblUsers, TblRequests
-                        WHERE TblUsers.UserID = TblRequests.UserID AND Manager = ? AND Accepted = false;""", (adminId, ))
+    requests = db.fetch("""SELECT RequestType, StartTime, Length, FirstName, LastName, RequestID FROM TblUsers, TblRequests WHERE TblUsers.UserID = TblRequests.UserID AND Manager = ? AND Accepted = false;""", (adminId, ))
     return json.dumps(requests)
 
 #Accepts an overtime or leave request by setting the value of its accepted attribute to true
