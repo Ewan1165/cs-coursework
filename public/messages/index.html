@@ -7,6 +7,11 @@
     <link rel="stylesheet" href="/messages/styles.css">
 </head>
 <body>
+    <dialog id="addpersonmodal">
+        <label for="personselect">Add:</label>
+        <select id="personselect"></select>
+        <button onclick="addPerson()">Ok</button>
+    </dialog>
     <div id="topbar">
         <button onclick="back()" id="backbutton">
             <img id="backimg" class="top-img" src="/resources/back-button.svg" alt="Back To Homepage">
@@ -14,7 +19,10 @@
         <h1 id="username"></h1>
     </div>
     <div id="container">
-        <div id="people"></div>
+        <div id="leftcontainer">
+            <div id="people"></div>
+            <button onclick="openAddPersonDialog()" id="addperson">Send New Message</button>
+        </div>
         <div id="rightcontainer">
             <div id="messages"></div>
             <div id="inputcontainer">
@@ -31,7 +39,12 @@
 
     const msginput = document.getElementById("msginput")
 
+    const addpersonmodal = document.getElementById("addpersonmodal")
+    const personselect = document.getElementById("personselect")
+
     document.getElementById("username").innerHTML = window.localStorage.getItem("firstname") + " " + window.localStorage.getItem("lastname")
+
+    let messagepeople = []
 
     function back() {
         window.location.replace("/")
@@ -47,6 +60,7 @@
             }
         )},
     }).then(res => res.json()).then(people => {
+        messagepeople = people
         people.forEach(i => {
             const div = document.createElement("div")
             div.classList.add("persondiv")
@@ -94,6 +108,58 @@
                 msgcontainer.appendChild(div)
                 msgcontainer.scrollTop = msgcontainer.scrollHeight
             })
+        })
+    }
+
+    async function openAddPersonDialog() {
+        let res = await fetch("/api/getpeople", {
+            method: "GET",
+            headers: {
+                authorization: JSON.stringify({
+                    FirstName: window.localStorage.getItem("firstname"),
+                    LastName: window.localStorage.getItem("lastname"),
+                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
+                }
+            )}
+        })
+        let newpeople = await res.json()
+        console.log(newpeople)
+        console.log(messagepeople)
+
+        for (person of newpeople) {
+            alreadyExists = false
+            for (existing of messagepeople) {
+                if (JSON.stringify(person) == JSON.stringify(existing) || ) {
+                    alreadyExists = true
+                    break
+                }
+            }
+            if (!alreadyExists) {
+                const option = document.createElement("option")
+                option.value = JSON.stringify(person)
+                option.innerHTML = person.join(" ")
+                personselect.appendChild(option)
+            }
+        }
+
+        addpersonmodal.showModal()
+    }
+
+    async function addPerson() {
+        addpersonmodal.close()
+        let person = JSON.parse(personselect.value)
+
+        //Add the person to the list
+        const div = document.createElement("div")
+        div.classList.add("persondiv")
+        div.innerHTML = `
+            <h1>${person[0]} ${person[1]}</h1>
+        `
+        div.firstname = person[0]
+        div.lastname = person[1]
+        peoplecontainer.appendChild(div)    
+        div.addEventListener("click", () => {
+            setMessagePerson(person[0], person[1])
         })
     }
 

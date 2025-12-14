@@ -50,6 +50,9 @@ class Database:
         else:
             return 1
         
+    def userNotExists(this, firstname, lastname):
+        return len(this.fetch("SELECT UserID FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))) == 0
+
     def getUserId(this, firstname, lastname):
         return this.fetchOne("SELECT UserID FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (firstname, lastname))[0]
 

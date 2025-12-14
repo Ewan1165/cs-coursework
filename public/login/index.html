@@ -71,7 +71,7 @@
         const password = passwordInput.value
 
         if ([firstName, lastName, password].includes("")) {
-            alert("Fill all fields")
+            window.alert("Fill all fields")
             return
         }
         
@@ -85,8 +85,10 @@
                 })
             }
         }).then(async(res) => {
-            if (res.status == 232) {
-                alert("Incorrect Password")
+            if (res.status == 231) {
+                window.alert("Incorrect Name")
+            } else if (res.status == 232) {
+                window.alert("Incorrect Password")
             } else {
                 json = await res.json()
                 window.localStorage.setItem("logincookie", json.LoginCookie)

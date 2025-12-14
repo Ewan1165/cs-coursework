@@ -5,6 +5,7 @@ from sql import Database
 from time import time
 from datetime import datetime, timedelta
 
+#Initialize a bottle app and my custom Database class
 app = Bottle()
 db = Database("db.db")
 
@@ -17,7 +18,7 @@ mimetypes = {
     ".svg": "image/svg+xml"
 }
 
-#Serve the requested file if it exists in public directory (for html, css and other resource files)
+#Serve the requested file if it exists in public directory (for all allowed resource files)
 @app.route("/<filepath:path>")
 def serveStatic(filepath):
     fullPath = os.path.join("public", filepath)
@@ -40,7 +41,6 @@ def serveLandingPage():
     return static_file("index.html", root="public")
 
 #Employee Apis
-
 def checkLoggedIn(function):
     def wrapper():
         authHeader = json.loads(request.get_header("authorization"))
@@ -73,7 +73,6 @@ def checkLoggedInAdmin(function):
 @app.route("/api/testLogin", method="POST")
 def api_testLogin():
     authHeader = json.loads(request.get_header("authorization"))
-    print(authHeader)
     loginStatus = db.userLoginStatusHeader(authHeader)
     match loginStatus:
         case 0:
@@ -84,10 +83,13 @@ def api_testLogin():
             response.status = 231
     return
 
-#Log user in status code 230: password is correct (sent back new login cookie) 232: password is incorrect
+#Log user in status code 230: password is correct (sent back new login cookie), 231: user doesnt exist, 232: password is incorrect
 @app.route("/api/login", method="POST")
 def api_Login():
     authHeader = json.loads(request.get_header("authorization"))
+    if db.userNotExists(authHeader["FirstName"], authHeader["LastName"]):
+        response.status = 231
+        return
     hashedPassword = sha256.hash(authHeader["Password"])
     correctPassword = db.testPassword(authHeader["FirstName"], authHeader["LastName"], hashedPassword)
     if correctPassword == False:
@@ -105,7 +107,7 @@ def api_Login():
 def api_Logout(authHeader, body):
     db.query("UPDATE tblUsers SET LoginCookie = NULL WHERE FirstName = ? AND LastName = ?;", (authHeader["firstname"], authHeader["lastname"]))
 
-#Insers a request into the database
+#Inserts a request into the database
 @app.route("/api/createrequest", method="POST")
 @checkLoggedIn
 def api_createrequest(authHeader, body):
@@ -160,27 +162,6 @@ def api_changepassword(authHeader, body):
     hashedpass = sha256.hash(newpass)
     db.query("UPDATE TblUsers SET Password = ? WHERE FirstName = ? AND LastName = ?;", (hashedpass, authHeader["FirstName"], authHeader["LastName"]))
 
-#Returns the 5 most recent unread and 5 most recent read notifications
-@app.route("/api/getnotifications", method="GET")
-@checkLoggedIn
-def api_getnotifications(authHeader, body):
-    unread = db.fetch("""SELECT Title, Body, Read, NotificationID FROM TblNotification, TblUsers
-                        WHERE TblNotification.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Read = false
-                        ORDER BY NotificationID DESC;""", (authHeader["FirstName"], authHeader["LastName"]))
-
-    read = db.fetch("""SELECT Title, Body, Read, NotificationID FROM TblNotification, TblUsers
-                        WHERE TblNotification.UserID = TblUsers.UserID AND FirstName = ? AND LastName = ? AND Read = true
-                        ORDER BY NotificationID DESC LIMIT 5;""", (authHeader["FirstName"], authHeader["LastName"]))
-    
-    return json.dumps(unread + read)
-
-#Sets the notification specified by the user as read
-@app.route("/api/readnotification", method="POST")
-@checkLoggedIn
-def api_readnotification(authHeader, body):
-    db.query("UPDATE TblNotification SET Read = true WHERE NotificationID = ?;", (body["notifid"], ))
-
-
 #Gets all people who the user has messaged or recieved messages from
 @app.route("/api/getmessagepeople", method="GET")
 @checkLoggedIn
@@ -192,6 +173,13 @@ def api_getmessagepeople(authHeader, body):
         UNION SELECT FirstName, LastName, Timestamp FROM TblMessages, TblUsers WHERE TblMessages.ReceiverID = TblUsers.UserID AND TblMessages.SenderID = ?
         ) ORDER BY Timestamp DESC;
     """, (userid, userid))
+    return json.dumps(people)
+
+#Returns a list of all people
+@app.route("/api/getpeople")
+@checkLoggedIn
+def api_getnewmessagepeople(authHeader, body):
+    people = db.fetch("SELECT FirstName, LastName FROM TblUsers;")
     return json.dumps(people)
 
 #Returns all messages between the 2 users
@@ -211,9 +199,13 @@ def api_getmessages(authHeader, body):
 @checkLoggedIn
 def api_sendmessage(authHeader, body):
     senderID = db.getUserIdFromHeader(authHeader)
-    reveiverID = db.getUserId(body["firstname"], body["lastname"])
+    recieverID = db.getUserId(body["firstname"], body["lastname"])
     timestamp = int(time())
-    db.query("INSERT INTO TblMessages (SenderID, ReceiverID, Body, Timestamp) VALUES (?, ?, ?, ?);", (senderID, reveiverID, body["msg"], timestamp))
+    db.query("INSERT INTO TblMessages (SenderID, ReceiverID, Body, Timestamp) VALUES (?, ?, ?, ?);", (senderID, recieverID, body["msg"], timestamp))
+    #Give the user a notification
+    senderName = db.fetchOne(f"SELECT FirstName FROM TblUsers WHERE UserID = {senderID};")[0]
+    msgID = db.fetchOne("SELECT MessageID FROM TblMessages ORDER BY MessageID DESC LIMIT 1")[0]
+    db.query(f"INSERT INTO TblNotification (UserID, Title, Body, MessageID, Read) VALUES (?, 'You have a new message from {senderName}!', ?, ?, false)", (recieverID, body["msg"], msgID))
 
 #Admin Apis
 
@@ -282,6 +274,7 @@ def api_removeuser(authHeader, body):
     db.query("PRAGMA foreign_keys = ON;")
     db.query("DELETE FROM TblUsers WHERE FirstName = ? AND LastName = ?;", (body["firstname"], body["lastname"]))
 
+#Gets data about how many hours the user selected has worked over the last 20 weeks
 @app.route("/api/admin/getuserdata", method="POST")
 @checkLoggedInAdmin
 def api_getuserdata(authHeader, body):
@@ -309,12 +302,5 @@ def api_getuserdata(authHeader, body):
 
     response.content_type = 'application/json'
     return json.dumps(data)
-
-"""i = 1744005600
-while i < 1755496800:
-    db.query("INSERT INTO TblClockIn (UserID, InOrOut, Time) VALUES (2, 1, ?);", (i,))
-    db.query("INSERT INTO TblClockIn (UserID, InOrOut, Time) VALUES (2, 0, ?);", (i+(random.randint(1,10)*3600),))
-
-    i += (24*60*60)"""
 
 run(app, host="localhost", port=3000)

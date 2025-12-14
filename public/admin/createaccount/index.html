@@ -115,7 +115,11 @@
         const loginBtn = document.getElementById("loginButton")
         loginBtn.onclick = async function() {
             if (firstNameInput.value.includes(" ") || lastNameInput.value.includes(" ")) {
-                alert("Names cannot contain spaces")
+                window.alert("Names cannot contain spaces")
+                return
+            }
+            if (firstNameInput.value == "" || lastNameInput.value == "" || phoneNumInput.value == "") {
+                window.alert("Fill all inputs!")
                 return
             }
             fetch("/api/admin/createaccount", {

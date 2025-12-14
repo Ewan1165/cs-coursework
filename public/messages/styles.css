@@ -12,6 +12,9 @@ body {
 div {
     display: flex;
 }
+#addpersonmodal {
+    flex-direction: column;
+}
 #topbar {
     width: 100vw;
     height: 9vh;
@@ -26,13 +29,24 @@ div {
     height: 91vh;
     flex-direction: column;
 }
-#people {
+#leftcontainer {
     width: 25vw;
     height: 91vh;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    flex-direction: column;
     border-right: solid;
+}
+#people {
+    width: 25vw;
+    height: 86vh;
     overflow-x: hidden;
     overflow-y: scroll;
     flex-direction: column;
+}
+#addperson {
+    height: 5vh;
 }
 #messages {
     width: 75vw;

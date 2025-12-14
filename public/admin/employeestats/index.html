@@ -6,6 +6,7 @@
     <title>Stats</title>
 </head>
 <body>
+    <button onclick="back()" id="backbutton">Back</button>
     <canvas id="canvas"></canvas>
 </body>
 
@@ -16,6 +17,10 @@
     const lastname = params.get("last")
 
     const ctx = document.getElementById("canvas")
+
+    function back() {
+        window.location.replace("/")
+    }
 
     function getLast20Mondays() {
         const res = []

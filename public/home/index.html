@@ -9,14 +9,6 @@
 
 <body>
     <div id="topcontainer">
-        <button onclick="opennotifications()" class="blank-button">
-            <img class="top-img" src="/resources/notification-bell.svg" alt="Notification">
-        </button>
-        <dialog id="notificationdialog">
-            <h1>Notifications:</h1>
-            <div id="notifdiv"></div>
-            <button onclick="closenotifications()">Close</button>
-        </dialog>
         <button onclick="gotomessages()" class="blank-button">
             <img class="top-img" src="/resources/messages-icon.svg" alt="Messages">
         </button>
@@ -73,9 +65,6 @@
 
     const clockinbtn = document.getElementById("clockinbtn")
     const clockoutbtn = document.getElementById("clockoutbtn")
-
-    const notificationdialog = document.getElementById("notificationdialog")
-    const notifdiv = document.getElementById("notifdiv")
 
     //Sends a request to the server to see if the user is clocked in or out and colour the buttons accordingly
     fetch("/api/getclockstatus", {
@@ -158,61 +147,6 @@
         window.location.replace("/messages")
     }
 
-    async function opennotifications() {
-        //Get all notifications from the server
-        const res = await fetch("/api/getnotifications", {
-            method: "GET",
-            headers: {
-                authorization: JSON.stringify({
-                    FirstName: window.localStorage.getItem("firstname"),
-                    LastName: window.localStorage.getItem("lastname"),
-                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
-                }
-            )}
-        })
-        //Set the contents of the notification dialog to include all notifications sent by the server, with a circle next to unread ones
-        notifdiv.innerHTML = ""
-        const notifs = await res.json()
-        for (notif of notifs) {
-            const div = document.createElement("div")
-            let unreadcircle
-            if (notif[2] == 0) {
-                unreadcircle = document.createElement("h1")
-                unreadcircle.id = String(notif[3]) + "_unreadcircleref"
-                unreadcircle.innerHTML = "&#9673&nbsp"
-                div.appendChild(unreadcircle)
-                div.addEventListener("mouseenter", function() {
-                    //If the user mouses over an unread notification then delete the circle and send a request to the server to mark it as read
-                    const circle = document.getElementById(String(notif[3]) + "_unreadcircleref")
-                    if (circle) {
-                        circle.remove()
-                        fetch("/api/readnotification", {
-                            method: "POST",
-                            headers: {
-                                authorization: JSON.stringify({
-                                    FirstName: window.localStorage.getItem("firstname"),
-                                    LastName: window.localStorage.getItem("lastname"),
-                                    LoginCookie: parseInt(window.localStorage.getItem("logincookie"))
-                                }
-                            )},
-                            body: JSON.stringify({notifid: notif[3]})
-                        })
-                    }
-                })
-            }
-            div.innerHTML += `
-                <h1>${notif[0]}&nbsp&nbsp</h1>
-                <h1>${notif[1]}</h1>
-            `
-            notifdiv.appendChild(div)
-        }
-        notificationdialog.showModal()
-    }
-
-    function closenotifications() {
-        notificationdialog.close()
-    }
-
     //Sends a request to the server to delete the users login cookie then goes back to the login page
     function logout() {
         fetch("/api/logout", {
@@ -238,8 +172,19 @@
             window.alert("Select a type of request!")
             return
         }
+
+        if (date.valueAsDate == null || time.value == "") {
+            window.alert("Enter a date and time!")
+            return
+        }
+
+        if (length.value == "") {
+            window.alert("Enter a length!")
+        }
+
         let requesttype = overtime.checked ? 0 : 1
         let timestamp = date.valueAsDate.getTime() + time.valueAsNumber
+
 
         let temptime = length.value.split(":").map(Number)
         let lengthms = (3600000 * temptime[0]) + (60000 * temptime[1])
@@ -258,6 +203,8 @@
                 timestamp: timestamp,
                 length: lengthms
             })
+        }).then(res => {
+            window.alert("Request Submitted")
         })
     }
 
