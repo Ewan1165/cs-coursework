@@ -116,6 +116,7 @@
         })
     }
 
+    //Removes the selected user and refreshes the page so that the requests and employee table is updated
     function removeuser(firstname, lastname) {
         fetch("/api/admin/removeuser", {
             method: "POST",

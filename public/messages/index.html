@@ -50,6 +50,7 @@
         window.location.replace("/")
     }
 
+    //Get all people that you have messages with and put them in the left bar
     fetch("/api/getmessagepeople", {
         method: "GET",
         headers: {
@@ -78,11 +79,13 @@
 
     let currentPerson = null
 
+    //Get all messages every second and update the page to show them
     setInterval(() => {
         if (!currentPerson) return
         setMessagePerson(currentPerson[0], currentPerson[1])
     }, 1000)
 
+    //Set the currently messaging person and update the page to show their messages
     function setMessagePerson(firstname, lastname) {
         currentPerson = [firstname, lastname]
         fetch("/api/getmessages", {
@@ -111,6 +114,7 @@
         })
     }
 
+    //Open the dialog to choose a new person to send a message to
     async function openAddPersonDialog() {
         let res = await fetch("/api/getpeople", {
             method: "GET",
@@ -145,6 +149,7 @@
         addpersonmodal.showModal()
     }
 
+    //Adds a new option to the list of people to send messages to
     async function addPerson() {
         addpersonmodal.close()
         let person = JSON.parse(personselect.value)
@@ -163,6 +168,7 @@
         })
     }
 
+    //When the user presses the send button send the message to the server and add it to the chat
     document.getElementById("sendbtn").onclick = function() {
         if (currentPerson == null) return
         if (msginput.value == "") return
