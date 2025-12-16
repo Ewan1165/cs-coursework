@@ -132,7 +132,7 @@
         for (event of json) {
             //For each block to be placed calculate its position on the canvas
             const startoffsetms = event[1] - weekbeginningtime
-            const day = Math.ceil(startoffsetms / 86400000)
+            const day = Math.floor(startoffsetms / 86400000)
             const through = (startoffsetms % 86400000) / 86400000
             if (event[0] == 0) {
                 ctx.fillStyle = "blue"
