@@ -234,7 +234,10 @@
     //Prompts the user to enter a new password, then sends it to the server to be encrypted and stored
     function changepassword() {
         let pass = window.prompt("Change password:")
-        if (pass == "" || pass == null) return
+        if (pass == "" || pass == null) {
+            window.alert("Invalid Password!")
+            return
+        }
         fetch("/api/changepassword", {
             method: "POST",
             headers: {
